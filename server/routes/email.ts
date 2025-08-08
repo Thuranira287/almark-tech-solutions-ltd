@@ -16,6 +16,8 @@ interface QuoteRequest {
   }>;
   totalPrice: number;
   paymentMethod: string;
+  paymentAmount: number;
+  balance: number;
   quoteId: string;
 }
 
@@ -128,13 +130,54 @@ function generateReceiptHTML(quoteData: QuoteRequest): string {
                     <td colspan="2"><strong>Total Amount</strong></td>
                     <td><strong>KES ${quoteData.totalPrice.toLocaleString()}</strong></td>
                 </tr>
+                ${
+                  quoteData.paymentAmount > 0
+                    ? `
+                <tr style="background: #f0f9ff;">
+                    <td colspan="2"><strong>Amount Paid</strong></td>
+                    <td><strong style="color: #059669;">- KES ${quoteData.paymentAmount.toLocaleString()}</strong></td>
+                </tr>
+                <tr style="background: #fef3c7;">
+                    <td colspan="2"><strong>Balance Due</strong></td>
+                    <td><strong style="color: #dc2626;">KES ${quoteData.balance.toLocaleString()}</strong></td>
+                </tr>
+                `
+                    : ""
+                }
             </tbody>
         </table>
         
         <div class="payment-info">
             <h4>Payment Information</h4>
             <p><strong>Preferred Payment Method:</strong> ${quoteData.paymentMethod === "mpesa" ? "M-Pesa" : "PayPal"}</p>
-            <p><strong>Payment Terms:</strong> 50% upfront, 50% on completion</p>
+            ${
+              quoteData.paymentAmount > 0
+                ? `
+            <div style="margin: 15px 0; padding: 10px; background: #f0f9ff; border-left: 4px solid #0ea5e9; border-radius: 4px;">
+                <h5 style="margin: 0 0 10px 0; color: #0ea5e9;">Payment Summary</h5>
+                <p style="margin: 5px 0;"><strong>Amount Paid:</strong> <span style="color: #059669;">KES ${quoteData.paymentAmount.toLocaleString()}</span></p>
+                <p style="margin: 5px 0;"><strong>Balance Due:</strong> <span style="color: #dc2626;">KES ${quoteData.balance.toLocaleString()}</span></p>
+                ${
+                  quoteData.paymentMethod === "mpesa" &&
+                  quoteData.paymentAmount > 0
+                    ? `
+                <div style="margin: 10px 0; padding: 8px; background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 12px; color: #059669;"><strong>M-Pesa Payment Details:</strong></p>
+                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #059669;">
+                        • Account: <strong>0716227616</strong> (Almark Tech Solutions)<br/>
+                        • Amount: <strong>KES ${quoteData.paymentAmount.toLocaleString()}</strong><br/>
+                        • Payment reflects immediately upon completion
+                    </p>
+                </div>
+                `
+                    : ""
+                }
+            </div>
+            `
+                : `
+            <p><strong>Payment Terms:</strong> Flexible payment options available</p>
+            `
+            }
             <p><em>*Final pricing may vary based on specific requirements and project scope</em></p>
         </div>
         

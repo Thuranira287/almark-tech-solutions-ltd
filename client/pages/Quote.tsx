@@ -57,6 +57,8 @@ export default function Quote() {
     "",
   );
   const [totalPrice, setTotalPrice] = useState(0);
+  const [paymentAmount, setPaymentAmount] = useState<number>(0);
+  const [balance, setBalance] = useState<number>(0);
 
   const services: Service[] = [
     // Core IT & Software Services
@@ -218,6 +220,11 @@ export default function Quote() {
     setTotalPrice(total);
   }, [selectedServices]);
 
+  useEffect(() => {
+    const calculatedBalance = totalPrice - paymentAmount;
+    setBalance(calculatedBalance > 0 ? calculatedBalance : 0);
+  }, [totalPrice, paymentAmount]);
+
   const handleServiceToggle = (serviceId: string) => {
     setSelectedServices((prev) =>
       prev.includes(serviceId)
@@ -269,6 +276,8 @@ export default function Quote() {
         selectedServices: selectedServicesData,
         totalPrice,
         paymentMethod,
+        paymentAmount,
+        balance,
         quoteId,
       };
 
@@ -285,20 +294,33 @@ export default function Quote() {
 
       if (result.success) {
         // Show success message with WhatsApp option
+        const paymentMessage =
+          paymentAmount > 0
+            ? `Amount Paid: KES ${paymentAmount.toLocaleString()}\n` +
+              `Balance Due: KES ${balance.toLocaleString()}\n`
+            : "";
+
         const confirmed = confirm(
           `✅ Quote submitted successfully!\n\n` +
             `Quote ID: ${quoteId}\n` +
             `Total: KES ${totalPrice.toLocaleString()}\n` +
+            paymentMessage +
             `📧 Receipt sent to: ${customerInfo.email}\n\n` +
             `We'll contact you within 24 hours.\n\n` +
             `Would you like to continue the conversation on WhatsApp?`,
         );
 
         if (confirmed) {
+          const whatsappPaymentText =
+            paymentAmount > 0
+              ? `Amount Paid: KES ${paymentAmount.toLocaleString()}\nBalance Due: KES ${balance.toLocaleString()}\n\n`
+              : "";
+
           const whatsappMessage = encodeURIComponent(
             `Hello Almark Tech Solutions! I just submitted a quote request.\n\n` +
               `Quote ID: ${quoteId}\n` +
-              `Total: KES ${totalPrice.toLocaleString()}\n\n` +
+              `Total: KES ${totalPrice.toLocaleString()}\n` +
+              whatsappPaymentText +
               `I'm interested in discussing the next steps.`,
           );
           window.open(
@@ -317,6 +339,8 @@ export default function Quote() {
           message: "",
         });
         setPaymentMethod("");
+        setPaymentAmount(0);
+        setBalance(0);
       } else {
         alert(
           "Error submitting quote. Please try again or contact us directly.",
@@ -437,6 +461,30 @@ export default function Quote() {
                         KES {totalPrice.toLocaleString()}
                       </span>
                     </div>
+
+                    {/* Payment Summary in Quote Summary */}
+                    {paymentMethod && paymentAmount > 0 && (
+                      <>
+                        <Separator />
+                        <div className="space-y-1 text-sm">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">
+                              Amount Paying:
+                            </span>
+                            <span className="font-semibold text-green-600">
+                              KES {paymentAmount.toLocaleString()}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-600">Balance Due:</span>
+                            <span className="font-semibold text-orange-600">
+                              KES {balance.toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+
                     <p className="text-xs text-gray-500 mt-2">
                       *Final price may vary based on specific requirements
                     </p>
@@ -549,8 +597,105 @@ export default function Quote() {
                     <span>PayPal</span>
                   </Label>
                 </div>
+
+                {/* Payment Amount Input - Shows when payment method is selected */}
+                {paymentMethod && (
+                  <div className="mt-4 p-4 bg-gray-50 rounded-lg border">
+                    <Label
+                      htmlFor="paymentAmount"
+                      className="text-sm font-semibold text-brand-dark"
+                    >
+                      Amount to Pay (KES)
+                    </Label>
+                    <Input
+                      id="paymentAmount"
+                      type="number"
+                      value={paymentAmount || ""}
+                      onChange={(e) =>
+                        setPaymentAmount(Number(e.target.value) || 0)
+                      }
+                      placeholder="Enter amount to pay"
+                      min="0"
+                      max={totalPrice}
+                      className="mt-2"
+                    />
+
+                    {/* Payment Summary */}
+                    {paymentAmount > 0 && (
+                      <div className="mt-3 space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Total Quote:</span>
+                          <span className="font-semibold">
+                            KES {totalPrice.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Amount Paying:</span>
+                          <span className="font-semibold text-green-600">
+                            KES {paymentAmount.toLocaleString()}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-600">Balance:</span>
+                          <span className="font-semibold text-orange-600">
+                            KES {balance.toLocaleString()}
+                          </span>
+                        </div>
+
+                        {paymentMethod === "mpesa" && (
+                          <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded text-xs">
+                            <p className="text-green-700 font-semibold">
+                              M-Pesa Payment Instructions:
+                            </p>
+                            <p className="text-green-600">
+                              1. Go to M-Pesa menu
+                              <br />
+                              2. Select "Send Money"
+                              <br />
+                              3. Enter: <strong>0716227616</strong> (Almark Tech
+                              Solutions)
+                              <br />
+                              4. Amount:{" "}
+                              <strong>
+                                KES {paymentAmount.toLocaleString()}
+                              </strong>
+                              <br />
+                              5. Complete payment
+                              <br />
+                              6.{" "}
+                              <em>
+                                Save M-Pesa confirmation message for your
+                                records
+                              </em>
+                            </p>
+                            <div className="mt-2 p-2 bg-yellow-50 border border-yellow-200 rounded">
+                              <p className="text-yellow-700 text-xs">
+                                <strong>Note:</strong> Payment will reflect in
+                                Almark's account (0716227616) immediately. Keep
+                                your M-Pesa confirmation code for reference.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+
+                        {paymentMethod === "paypal" && (
+                          <div className="mt-3 p-2 bg-blue-50 border border-blue-200 rounded text-xs">
+                            <p className="text-blue-700 font-semibold">
+                              PayPal Payment:
+                            </p>
+                            <p className="text-blue-600">
+                              Payment link will be sent to your email after
+                              quote submission.
+                            </p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <p className="text-xs text-gray-500">
-                  Payment terms: 50% upfront, 50% on completion
+                  Payment terms: You can pay full amount or partial amount now
                 </p>
               </CardContent>
             </Card>

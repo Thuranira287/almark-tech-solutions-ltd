@@ -21,11 +21,13 @@ export default function Footer() {
               <img
                 src="https://cdn.builder.io/api/v1/assets/71f0184882c4419c9eb0eea502d5d8ef/img-20250411-wa0001-9983c9?format=webp&width=800"
                 alt="Almark Tech Solutions"
-                className="h-12 w-auto"
+                className="h-12 w-12 rounded-full object-cover"
               />
               <div>
                 <h3 className="text-xl font-bold">Almark Tech Solutions</h3>
-                <p className="text-brand-gold">Your Tech Partner</p>
+                <p className="text-brand-gold italic underline">
+                  Your Tech Partner
+                </p>
               </div>
             </div>
             <p className="text-gray-300 mb-6 max-w-md">
@@ -135,18 +137,18 @@ export default function Footer() {
               © 2024 Almark Tech Solutions. All rights reserved.
             </p>
             <div className="flex space-x-6 mt-4 md:mt-0">
-              <a
-                href="#"
+              <Link
+                to="/privacy-policy"
                 className="text-gray-400 hover:text-white text-sm transition-colors"
               >
                 Privacy Policy
-              </a>
-              <a
-                href="#"
+              </Link>
+              <Link
+                to="/terms-of-service"
                 className="text-gray-400 hover:text-white text-sm transition-colors"
               >
                 Terms of Service
-              </a>
+              </Link>
             </div>
           </div>
         </div>

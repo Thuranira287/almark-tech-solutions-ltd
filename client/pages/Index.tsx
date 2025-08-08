@@ -17,6 +17,9 @@ import {
   ShoppingCart,
   ChevronRight,
   MessageCircle,
+  ExternalLink,
+  Calendar,
+  Star,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -177,13 +180,13 @@ export default function Index() {
                 <img
                   src="https://cdn.builder.io/api/v1/assets/71f0184882c4419c9eb0eea502d5d8ef/img-20250411-wa0001-9983c9?format=webp&width=800"
                   alt="Almark Tech Solutions"
-                  className="h-16 w-auto"
+                  className="h-16 w-16 rounded-full object-cover"
                 />
                 <div>
                   <h1 className="text-4xl lg:text-5xl font-bold text-brand-gold">
                     Almark Tech Solutions
                   </h1>
-                  <p className="text-xl text-brand-gold-light italic">
+                  <p className="text-xl text-brand-gold-light italic underline">
                     Your Tech Partner
                   </p>
                 </div>
@@ -403,6 +406,246 @@ export default function Index() {
                 </CardContent>
               </Card>
             ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Completed Projects */}
+      <section className="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-brand-dark mb-4">
+              🏆 Our Completed Projects
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              See how we've helped our clients transform their businesses with
+              innovative technology solutions
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {/* School Management System */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-l-4 border-l-brand-tech-blue overflow-hidden">
+              <div className="relative h-48 bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
+                <div className="text-white text-center">
+                  <GraduationCap className="h-16 w-16 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold">EduManage Pro</h3>
+                  <p className="text-blue-100">School Management System</p>
+                </div>
+                <div className="absolute top-4 right-4 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center">
+                  <Star className="h-3 w-3 mr-1" />
+                  Completed
+                </div>
+              </div>
+              <CardHeader>
+                <CardTitle className="text-lg text-brand-dark flex items-center">
+                  <Database className="h-5 w-5 mr-2 text-brand-tech-blue" />
+                  Comprehensive School Management
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-gray-600 text-sm">
+                    Complete school management solution with student records,
+                    attendance tracking, grade management, fee collection, and
+                    parent communication portal.
+                  </p>
+
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-brand-dark text-sm">
+                      Key Features:
+                    </h4>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Student & Staff Management
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Automated Fee Collection
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Parent Communication Portal
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Real-time Reports & Analytics
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Completed: Dec 2023
+                    </div>
+                    <div className="flex items-center text-xs text-brand-tech-blue">
+                      <Code className="h-3 w-3 mr-1" />
+                      Desktop + Web
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Corporate Website */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-l-4 border-l-brand-gold overflow-hidden">
+              <div className="relative h-48 bg-gradient-to-br from-brand-gold to-yellow-600 flex items-center justify-center">
+                <div className="text-white text-center">
+                  <Globe className="h-16 w-16 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold">Corporate Website</h3>
+                  <p className="text-yellow-100">Professional Business Site</p>
+                </div>
+                <div className="absolute top-4 right-4 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center">
+                  <Star className="h-3 w-3 mr-1" />
+                  Completed
+                </div>
+              </div>
+              <CardHeader>
+                <CardTitle className="text-lg text-brand-dark flex items-center">
+                  <Monitor className="h-5 w-5 mr-2 text-brand-gold" />
+                  Modern Corporate Website
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-gray-600 text-sm">
+                    Professional corporate website with modern design, content
+                    management system, SEO optimization, and lead generation
+                    capabilities.
+                  </p>
+
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-brand-dark text-sm">
+                      Key Features:
+                    </h4>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Responsive Design
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Content Management System
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        SEO Optimization
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Contact Forms & Analytics
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Completed: Jan 2024
+                    </div>
+                    <div className="flex items-center text-xs text-brand-gold">
+                      <Globe className="h-3 w-3 mr-1" />
+                      Web + Mobile
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            {/* Lady Cosmetics E-commerce */}
+            <Card className="group hover:shadow-xl transition-all duration-300 border-l-4 border-l-pink-500 overflow-hidden">
+              <div className="relative h-48 bg-gradient-to-br from-pink-500 to-rose-600 flex items-center justify-center">
+                <div className="text-white text-center">
+                  <Palette className="h-16 w-16 mx-auto mb-4" />
+                  <h3 className="text-2xl font-bold">Beauty Boutique</h3>
+                  <p className="text-pink-100">Cosmetics E-commerce</p>
+                </div>
+                <div className="absolute top-4 right-4 bg-green-500 text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center">
+                  <Star className="h-3 w-3 mr-1" />
+                  Completed
+                </div>
+              </div>
+              <CardHeader>
+                <CardTitle className="text-lg text-brand-dark flex items-center">
+                  <ShoppingCart className="h-5 w-5 mr-2 text-pink-500" />
+                  Premium Cosmetics Store
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-gray-600 text-sm">
+                    Elegant e-commerce platform for cosmetics and makeup
+                    products with advanced product catalog, secure payments, and
+                    beauty consultation features.
+                  </p>
+
+                  <div className="space-y-2">
+                    <h4 className="font-semibold text-brand-dark text-sm">
+                      Key Features:
+                    </h4>
+                    <ul className="text-xs text-gray-600 space-y-1">
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Product Catalog & Search
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        M-Pesa & PayPal Integration
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Beauty Consultation Booking
+                      </li>
+                      <li className="flex items-center">
+                        <CheckCircle className="h-3 w-3 mr-2 text-green-500" />
+                        Inventory & Order Management
+                      </li>
+                    </ul>
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t">
+                    <div className="flex items-center text-xs text-gray-500">
+                      <Calendar className="h-3 w-3 mr-1" />
+                      Completed: Nov 2023
+                    </div>
+                    <div className="flex items-center text-xs text-pink-500">
+                      <ShoppingCart className="h-3 w-3 mr-1" />
+                      E-commerce
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Portfolio CTA */}
+          <div className="text-center mt-12">
+            <p className="text-gray-600 mb-6">
+              Want to see more of our work or discuss your project?
+            </p>
+            <div className="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-4">
+              <Link to="/quote">
+                <Button className="bg-brand-gold hover:bg-brand-gold-dark text-brand-dark font-semibold">
+                  Start Your Project
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              </Link>
+              <a
+                href="https://wa.me/254716227616?text=Hello%20Almark%20Tech%20Solutions,%20I'd%20like%20to%20see%20more%20of%20your%20portfolio"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button
+                  variant="outline"
+                  className="border-brand-dark text-brand-dark hover:bg-brand-dark hover:text-white"
+                >
+                  View Full Portfolio
+                  <ExternalLink className="ml-2 h-4 w-4" />
+                </Button>
+              </a>
+            </div>
           </div>
         </div>
       </section>
