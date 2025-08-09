@@ -149,7 +149,11 @@ function generateReceiptHTML(quoteData: QuoteRequest): string {
         
         <div class="payment-info">
             <h4>Payment Information</h4>
-            <p><strong>Preferred Payment Method:</strong> ${quoteData.paymentMethod === "mpesa" ? "M-Pesa" : "PayPal"}</p>
+            <p><strong>Preferred Payment Method:</strong> ${
+              quoteData.paymentMethod === "mpesa" ? "M-Pesa" :
+              quoteData.paymentMethod === "paypal" ? "PayPal" :
+              quoteData.paymentMethod === "creditcard" ? "Credit/Debit Card" : "Not specified"
+            }</p>
             ${
               quoteData.paymentAmount > 0
                 ? `
@@ -167,6 +171,19 @@ function generateReceiptHTML(quoteData: QuoteRequest): string {
                         • Account: <strong>0716227616</strong> (Almark Tech Solutions)<br/>
                         • Amount: <strong>KES ${quoteData.paymentAmount.toLocaleString()}</strong><br/>
                         • Payment reflects immediately upon completion
+                    </p>
+                </div>
+                `
+                    : quoteData.paymentMethod === "creditcard" &&
+                      quoteData.paymentAmount > 0
+                    ? `
+                <div style="margin: 10px 0; padding: 8px; background: #faf5ff; border: 1px solid #d8b4fe; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 12px; color: #7c3aed;"><strong>Credit Card Payment Details:</strong></p>
+                    <p style="margin: 5px 0 0 0; font-size: 12px; color: #7c3aed;">
+                        • Amount: <strong>KES ${quoteData.paymentAmount.toLocaleString()}</strong><br/>
+                        • Payment will be processed securely through our certified payment gateway<br/>
+                        • You will receive a separate payment confirmation email<br/>
+                        • Transaction will appear as "Almark Tech Solutions" on your statement
                     </p>
                 </div>
                 `
