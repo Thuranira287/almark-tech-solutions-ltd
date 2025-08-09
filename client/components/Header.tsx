@@ -9,8 +9,8 @@ export default function Header() {
   const navLinks = [
     { href: "/", label: "Home" },
     { href: "#services", label: "Services" },
-    { href: "#about", label: "About" },
-    { href: "#contact", label: "Contact" },
+    { href: "/about", label: "About" },
+    { href: "/contact", label: "Contact" },
   ];
 
   return (
@@ -23,7 +23,7 @@ export default function Header() {
               srcSet="C:\Users\alexa\Desktop\React\almark-sol\builder-glow-studio-main\public\Almark logo.jpg"
               src="https://cdn.builder.io/api/v1/assets/71f0184882c4419c9eb0eea502d5d8ef/img-20250411-wa0001-9983c9?format=webp&width=800"
               alt="Almark Tech Solutions"
-              className="h-10 w-auto"
+              className="h-10 w-10 rounded-full  object-cover"
             />
             <div className="hidden sm:block">
               <h1 className="text-xl font-bold text-brand-dark">
