@@ -63,44 +63,44 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Quick Links */}
-          <div>
-            <h4 className="font-semibold mb-4 text-brand-gold">Quick Links</h4>
-            <ul className="space-y-2">
-              <li>
-                <a
-                  href="#services"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Our Services
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#about"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  About Us
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#contact"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Contact
-                </a>
-              </li>
-              <li>
-                <a
-                  href="#"
-                  className="text-gray-300 hover:text-white transition-colors"
-                >
-                  Get Quote
-                </a>
-              </li>
-            </ul>
-          </div>
+           {/* Quick Links */}
+            <div>
+              <h4 className="font-semibold mb-4 text-brand-gold">Quick Links</h4>
+              <ul className="space-y-2">
+                <li>
+                  <Link
+                    to="/"
+                    className="text-gray-300 hover:text-white transition-colors"
+                  >
+                    Our Services
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/about"
+                    className="text-gray-300 hover:text-white transition-colors"
+                  >
+                    About Us
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/contact"
+                    className="text-gray-300 hover:text-white transition-colors"
+                  >
+                    Contact
+                  </Link>
+                </li>
+                <li>
+                  <Link
+                    to="/quote"
+                    className="text-gray-300 hover:text-white transition-colors"
+                  >
+                    Get Quote
+                  </Link>
+                </li>
+              </ul>
+            </div> 
 
           {/* Contact Info */}
           <div>
