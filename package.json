@@ -1,5 +1,5 @@
 {
-  "name": "fusion-starter",
+  "name": "almark-tech",
   "private": true,
   "type": "module",
   "pkg": {
@@ -21,6 +21,7 @@
     "typecheck": "tsc"
   },
   "dependencies": {
+    "@netlify/blobs": "^10.0.8",
     "dotenv": "^17.2.0",
     "express": "^4.18.2",
     "zod": "^3.23.8"

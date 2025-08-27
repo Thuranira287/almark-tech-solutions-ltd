@@ -38,24 +38,32 @@ export default function Footer() {
             <div className="flex space-x-4">
               <a
                 href="#"
+                aria-label="Facebook"
+                title="Facebook"
                 className="text-gray-400 hover:text-brand-gold transition-colors"
               >
                 <Facebook className="h-5 w-5" />
               </a>
               <a
                 href="#"
+                aria-label="Twitter"
+                title="Twitter"
                 className="text-gray-400 hover:text-brand-gold transition-colors"
               >
                 <Twitter className="h-5 w-5" />
               </a>
               <a
                 href="#"
+                aria-label="LinkedIn"
+                title="LinkedIn"
                 className="text-gray-400 hover:text-brand-gold transition-colors"
               >
                 <Linkedin className="h-5 w-5" />
               </a>
               <a
                 href="#"
+                aria-label="Instagram"
+                title="Instagram"
                 className="text-gray-400 hover:text-brand-gold transition-colors"
               >
                 <Instagram className="h-5 w-5" />
