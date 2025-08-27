@@ -1,8 +1,6 @@
-# Fusion Starter
+# Almark-Tech
 
-A production-ready full-stack React application template with integrated Express server, featuring React Router 6 SPA mode, TypeScript, Vitest, Zod and modern tooling.
-
-While the starter comes with a express server, only create endpoint when strictly neccesary, for example to encapsulate logic that must leave in the server, such as private keys handling, or certain DB operations, db...
+A full-stack React application with integrated Express server, featuring React Router 6 SPA mode, TypeScript, Vitest, Zod and modern tooling.
 
 ## Tech Stack
 
@@ -68,7 +66,7 @@ className={cn(
 
 ### Express Server Integration
 
-- **Development**: Single port (8080) for both frontend/backend
+- **Development**: Single port (8080/3000) for both frontend/backend
 - **Hot reload**: Both client and server code
 - **API endpoints**: Prefixed with `/api/`
 
