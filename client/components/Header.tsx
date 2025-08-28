@@ -48,7 +48,7 @@ export default function Header() {
               <Link
               key={link.href}
               to={link.href}
-              className="text-brand-gold-dark hover:text-brand-gold transition-colors duration-200 font-medium"
+              className="text-brand-dark hover:text-brand-gold transition-colors duration-200 font-medium"
               >
                 {link.label}
               </Link>
