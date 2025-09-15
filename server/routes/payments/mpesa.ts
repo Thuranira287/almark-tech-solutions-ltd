@@ -23,11 +23,11 @@ interface MpesaConfig {
 
 // M-Pesa configuration - In production, use environment variables
 const mpesaConfig: MpesaConfig = {
-  consumerKey: process.env.MPESA_CONSUMER_KEY || 'your_consumer_key',
-  consumerSecret: process.env.MPESA_CONSUMER_SECRET || 'your_consumer_secret',
-  businessShortCode: process.env.MPESA_SHORTCODE || '174379', // Safaricom test shortcode
-  passkey: process.env.MPESA_PASSKEY || 'your_passkey',
-  callbackUrl: process.env.MPESA_CALLBACK_URL || 'https://your-domain.com/api/mpesa/callback',
+  consumerKey: process.env.MPESA_CONSUMER_KEY,
+  consumerSecret: process.env.MPESA_CONSUMER_SECRET,
+  businessShortCode: process.env.MPESA_SHORTCODE,
+  passkey: process.env.MPESA_PASSKEY,
+  callbackUrl: process.env.MPESA_CALLBACK_URL,
   environment: (process.env.NODE_ENV === 'production' ? 'production' : 'sandbox') as 'sandbox' | 'production'
 };
 

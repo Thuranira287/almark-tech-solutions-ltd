@@ -21,7 +21,6 @@ export default function Header() {
           <Link to="/" className="flex items-center space-x-3">
             <img
               src="/Almark logo.jpg"
-              //src="https://cdn.builder.io/api/v1/assets/71f0184882c4419c9eb0eea502d5d8ef/img-20250411-wa0001-9983c9?format=webp&width=800"
               alt="Almark Tech Solutions"
               className="h-10 w-10 rounded-full  object-cover"
             />

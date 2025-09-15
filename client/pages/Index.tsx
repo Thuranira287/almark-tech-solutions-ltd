@@ -20,6 +20,9 @@ import {
   ExternalLink,
   Calendar,
   Star,
+  HospitalIcon,
+  Car,
+  FileText,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -91,6 +94,20 @@ export default function Index() {
         "Software Installation",
         "Network Setup",
         "Maintenance Plans",
+      ],
+    },
+    {
+      icon: <Globe className="h-8 w-8" />,
+      title: "Online Cyber Services",
+      description:
+        "Access a range of essential government services in one place! Our platform offers:",
+      features: [
+        "NTSA Services",
+        "SHA Application",
+        "HELB Application Services",
+        "Police Clearance Certificate Application",
+        "KUCCPS Application",
+        "KRA Certificate Application"
       ],
     },
   ];
@@ -168,6 +185,46 @@ export default function Index() {
     },
   ];
 
+  // Online Cyber
+  const cyberServices = [
+    {
+      icon: <GraduationCap className="h-8 w-8" />,
+      title: "HELB Application",
+      description:
+        "Apply for higher education loans with ease.",
+    },
+    {
+      icon: <Car className="h-8 w-8" />,
+      title: "NTSA Services",
+      description: "Driving licenses, vehicle registration, and more.",
+    },
+    {
+      icon: <HospitalIcon className="h-8 w-8" />,
+      title: "SHA Services",
+      description:
+        "Streamline your health insurance application",
+    },
+    {
+      icon: <FileText className="h-8 w-8" />,
+      title: "KRA Application",
+      description:
+        "Tax-related services, including PIN registration and tax returns",
+    },
+     {
+      icon: <GraduationCap className="h-8 w-8" />,
+      title: "KUCCPS Services",
+      description:
+        "Access university placement services and more.",
+    },
+     {
+      icon: <Shield className="h-8 w-8" />,
+      title: "Police Clearance Certificate",
+      description:
+        "Obtain certificates for employment, travel, or other purposes",
+    },
+
+  ];
+
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -179,7 +236,6 @@ export default function Index() {
               <div className="flex items-center space-x-4 mb-6">
                 <img
                   src="/Almark logo.jpg"
-                  //src="https://cdn.builder.io/api/v1/assets/71f0184882c4419c9eb0eea502d5d8ef/img-20250411-wa0001-9983c9?format=webp&width=800"
                   alt="Almark Tech Solutions"
                   className="h-16 w-16 rounded-full object-cover"
                 />
@@ -411,8 +467,44 @@ export default function Index() {
         </div>
       </section>
 
+      {/* Online Cyber Services */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl lg:text-4xl font-bold text-brand-dark mb-4">
+              🌐 Online Cyber Services
+            </h2>
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto">
+              Access a range of essential government services in one place from comfort of your home
+            </p>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {cyberServices.map((service, index) => (
+              <Card
+                key={index}
+                className="hover:shadow-lg transition-all duration-300 border-l-4 border-l-blue-400"
+              >
+                <CardHeader>
+                  <div className="flex items-center space-x-3">
+                    <div className="text-blue-400">{service.icon}</div>
+                    <CardTitle className="text-lg text-brand-dark">
+                      {service.title}
+                    </CardTitle>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <CardDescription className="text-gray-600">
+                    {service.description}
+                  </CardDescription>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Completed Projects */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-gray-100">
+      <section className="py-20 bg-gradient-to-br from-gray-70 to-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl lg:text-4xl font-bold text-brand-dark mb-4">
@@ -479,7 +571,7 @@ export default function Index() {
                   <div className="flex items-center justify-between pt-3 border-t">
                     <div className="flex items-center text-xs text-gray-500">
                       <Calendar className="h-3 w-3 mr-1" />
-                      Completed: Dec 2023
+                      Completed: Aug 2025
                     </div>
                     <div className="flex items-center text-xs text-brand-tech-blue">
                       <Code className="h-3 w-3 mr-1" />

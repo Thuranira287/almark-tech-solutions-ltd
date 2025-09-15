@@ -7,6 +7,7 @@ import {
   Twitter,
   Linkedin,
   Instagram,
+  Github,
   MessageCircle,
 } from "lucide-react";
 
@@ -19,7 +20,7 @@ export default function Footer() {
           <div className="lg:col-span-2">
             <div className="flex items-center space-x-3 mb-4">
               <img
-                src="https://cdn.builder.io/api/v1/assets/71f0184882c4419c9eb0eea502d5d8ef/img-20250411-wa0001-9983c9?format=webp&width=800"
+                src="Almark logo.jpg"
                 alt="Almark Tech Solutions"
                 className="h-12 w-12 rounded-full object-cover"
               />
@@ -37,15 +38,15 @@ export default function Footer() {
             </p>
             <div className="flex space-x-4">
               <a
-                href="#"
+                href="https://www.facebook.com/alexander.thuranira.1044"
                 aria-label="Facebook"
                 title="Facebook"
-                className="text-gray-400 hover:text-brand-gold transition-colors"
+                className="text-blue-400 hover:text-brand-gold transition-colors"
               >
                 <Facebook className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://x.com/ranviah?s=09"
                 aria-label="Twitter"
                 title="Twitter"
                 className="text-gray-400 hover:text-brand-gold transition-colors"
@@ -53,20 +54,28 @@ export default function Footer() {
                 <Twitter className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://www.linkedin.com/"
                 aria-label="LinkedIn"
                 title="LinkedIn"
-                className="text-gray-400 hover:text-brand-gold transition-colors"
+                className="text-blue-400 hover:text-brand-gold transition-colors"
               >
                 <Linkedin className="h-5 w-5" />
               </a>
               <a
-                href="#"
+                href="https://www.instagram.com"
                 aria-label="Instagram"
                 title="Instagram"
-                className="text-gray-400 hover:text-brand-gold transition-colors"
+                className="text-pink-400 hover:text-brand-gold transition-colors"
               >
                 <Instagram className="h-5 w-5" />
+              </a>
+              <a
+                href="https://github.com/Thuranira287"
+                aria-label="Github"
+                title="Github"
+                className="text-gray-400 hover:text-brand-gold transition-colors"
+              >
+                <Github className="h-5 w-5" />
               </a>
             </div>
           </div>

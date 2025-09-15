@@ -366,17 +366,16 @@ class PaymentService {
   }
 
   convertCurrency(amount: number, from: string, to: string): number {
-    // Simple conversion rates - in production, use real-time rates
     const rates: { [key: string]: number } = {
-      'KES_TO_USD': 0.0077, // 1 KES = 0.0077 USD (approximate)
-      'USD_TO_KES': 130     // 1 USD = 130 KES (approximate)
+      'KES_TO_USD': 0.0077,
+      'USD_TO_KES': 130
     };
 
     const rateKey = `${from}_TO_${to}`;
     const rate = rates[rateKey];
     
     if (!rate) {
-      return amount; // Return original amount if no conversion available
+      return amount;
     }
     
     return parseFloat((amount * rate).toFixed(2));
