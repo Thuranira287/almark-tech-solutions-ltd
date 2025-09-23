@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 
-interface BankPaymentRequest {
+export interface BankPaymentRequest {
   amount: number;
   currency: string;
   quoteId: string;
@@ -12,7 +12,7 @@ interface BankPaymentRequest {
   accountNumber?: string;
 }
 
-interface BankConfig {
+export interface BankConfig {
   apiKey: string;
   apiSecret: string;
   merchantId: string;

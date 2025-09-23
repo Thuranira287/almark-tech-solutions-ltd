@@ -1,6 +1,6 @@
 import { RequestHandler } from "express";
 
-interface PayPalPaymentRequest {
+export interface PayPalPaymentRequest {
   amount: number;
   currency: string;
   quoteId: string;
@@ -12,7 +12,7 @@ interface PayPalPaymentRequest {
   cancelUrl: string;
 }
 
-interface PayPalConfig {
+export interface PayPalConfig {
   clientId: string;
   clientSecret: string;
   environment: 'sandbox' | 'live';

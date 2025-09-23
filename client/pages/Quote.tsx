@@ -20,6 +20,11 @@ import {
   MessageCircle,
   Building,
   Loader2,
+  Car,
+  Hospital,
+  HospitalIcon,
+  FileText,
+  IdCardIcon,
 } from "lucide-react";
 import { paymentService } from "@/lib/paymentService";
 import { Link } from "react-router-dom";
@@ -206,6 +211,72 @@ export default function Quote() {
       basePrice: 15000,
       priceRange: "KES 15,000 - 30,000",
     },
+
+    //Online Cyber Services
+    {
+      id: "HELB Application",
+      category: "Online Cyber Services",
+      name: "HELB Application",
+      description: "Apply for higher education loans with ease",
+      icon: <GraduationCap className="h-5 w-5" />,
+      basePrice: 200,
+      priceRange: "KES 150 - 250",
+    },
+    {
+      id: "NTSA Services",
+      category: "Online Cyber Services",
+      name: "NTSA Services",
+      description: "Driving licenses application, Vehicle registration, Ownership transfer, Licenses renewal and more",
+      icon: <Car className="h-5 w-5" />,
+      basePrice: 3500,
+      priceRange: "KES 3500 - 4500" ,
+    },
+    {
+      id: "SHA Services",
+      category: "Online Cyber Services",
+      name: "SHA Insurance Application",
+      description: "Afyayangu health application, contribution payments and statements checks, Facility selection, and more",
+      icon: <HospitalIcon className="h-5 w-5"/>,
+      basePrice: 300,
+      priceRange: "KES 150 - 350",
+    },
+    {
+      id: "KRA Services",
+      category: "Online Cyber Services",
+      name: "KRA Application",
+      description: "KRA PIN Application, Filling returns, PIN retrival, Tax exemption and more.",
+      icon: <FileText className="h-5 w-5"/>,
+      basePrice: 250,
+      priceRange: "KES 200 - 400",
+    },
+    {
+      id: "Passport Application",
+      category: "Online Cyber Services",
+      name: "Passport Application",
+      description: "Passport Application",
+      icon:<IdCardIcon className="h-5 w-5"/>,
+      basePrice: 1100,
+      priceRange: "KES 1100 - 1500",
+    },
+    {
+      id: "KUCCPS Services",
+      category: "Online Cyber Services",
+      name: "KUCCPS Application",
+      description: "University, KMTC & TVET Application, Inter-Institution transfer, and more ",
+      icon: <GraduationCap className="h-5 w-5"/>,
+      basePrice: 400,
+      priceRange: "KES 250 - 500",
+    },
+    {
+      id: "Police Clearance Certificate",
+      category: "Online Cyber Services",
+      name: "Police Clearance Certificate",
+      description: "Good conduct application, police abstract, and more",
+      icon: <Shield className="h-5 w-5"/>,
+      basePrice: 1200,
+      priceRange: "KES 1100 - 1500"
+    },
+
   ];
 
   const servicesByCategory = services.reduce(

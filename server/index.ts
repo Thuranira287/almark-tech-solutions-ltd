@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import { handleDemo } from "./routes/demo";
 import { sendQuoteReceipt } from "./routes/email";
+import { paymentsRouter } from "./routes/payments";
 
 export function createServer() {
   const app = express();
@@ -22,6 +23,9 @@ export function createServer() {
 
   // Quote and email routes
   app.post("/api/send-quote-receipt", sendQuoteReceipt);
+
+  // Mount the payments router
+  app.use("/api/payments", paymentsRouter);
 
   return app;
 }
