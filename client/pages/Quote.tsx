@@ -733,6 +733,7 @@ export default function Quote() {
                     value={customerInfo.name}
                     onChange={(e) => handleInputChange("name", e.target.value)}
                     placeholder="Enter your full name"
+                    autoComplete="name"
                   />
                 </div>
                 <div>
@@ -743,12 +744,14 @@ export default function Quote() {
                     value={customerInfo.email}
                     onChange={(e) => handleInputChange("email", e.target.value)}
                     placeholder="Enter your email"
+                    autoComplete="email"
                   />
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone Number *</Label>
                   <Input
                     id="phone"
+                    autoComplete="tel"
                     value={customerInfo.phone}
                     onChange={(e) => handleInputChange("phone", e.target.value)}
                     placeholder="e.g., +254712345678"
@@ -758,6 +761,7 @@ export default function Quote() {
                   <Label htmlFor="company">Company/Organization</Label>
                   <Input
                     id="company"
+                    autoComplete="organization"
                     value={customerInfo.company}
                     onChange={(e) =>
                       handleInputChange("company", e.target.value)
