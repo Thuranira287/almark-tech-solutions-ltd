@@ -2,9 +2,13 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X, Phone, Mail, MessageCircle } from "lucide-react";
 import { Button } from "./ui/button";
+import { SiGmail } from "react-icons/si";
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const handleEmailClick =() => {
+    window.location.href = "mailto:info@almarktech.com";
+  };
 
   const navLinks = [
     { href: "/", label: "Home" },
@@ -70,6 +74,13 @@ export default function Header() {
               <MessageCircle className="h-4 w-4" />
               <span className="text-sm">WhatsApp</span>
             </a>
+            <div className="flex items-center space-x-2 text-sm text-gray-700 hover:text-blue-600 cursor-pointer"
+              onClick={handleEmailClick}
+              title="Send us an email"
+              >
+              <SiGmail className="h-4 w-4 text-red-500" />
+              <span>Gmail</span>
+            </div>
             <Link to="/quote">
               <Button className="bg-brand-gold hover:bg-brand-gold-dark text-brand-dark font-semibold">
                 Get Quote

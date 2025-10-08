@@ -5,7 +5,7 @@ import bodyParser from "body-parser";
 import PDFDocument from "pdfkit";
 import nodemailer from "nodemailer";
 import fs from "fs";
-import { initiateSTKPush } from "./m-pesa"; // M-Pesa helper
+import { initiateSTKPush } from "./m-pesa";
 
 const app = createServer();
 const port = process.env.PORT || 5000;

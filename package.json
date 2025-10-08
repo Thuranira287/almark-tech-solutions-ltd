@@ -10,16 +10,16 @@
       "dist/server/**/*.js"
     ]
   },
-"scripts": {
-  "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
-  "dev:client": "vite --port 3000",
-  "dev:server": "tsx server/node-build.ts",
-  "dev:ngrok": "ngrok http 5000",
-  "build": "npm run build:client && npm run build:server",
-  "build:client": "vite build",
-  "build:server": "vite build --config vite.config.server.ts",
-  "start": "node dist/server/node-build.mjs"
-},
+  "scripts": {
+    "dev": "concurrently \"npm run dev:client\" \"npm run dev:server\"",
+    "dev:client": "vite --port 3000",
+    "dev:server": "tsx server/node-build.ts",
+    "dev:ngrok": "ngrok http 5000",
+    "build": "npm run build:client && npm run build:server",
+    "build:client": "vite build",
+    "build:server": "vite build --config vite.config.server.ts",
+    "start": "node dist/server/node-build.mjs"
+  },
   "dependencies": {
     "@netlify/blobs": "^10.0.8",
     "axios": "^1.12.2",
@@ -29,6 +29,7 @@
     "node-fetch": "^3.3.2",
     "nodemailer": "^7.0.6",
     "pdfkit": "^0.17.2",
+    "react-icons": "^5.5.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {
