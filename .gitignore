@@ -1,3 +1,40 @@
+# Create/overwrite .gitignore with comprehensive rules
+@"
+# Environment Variables
+.env
+.env.*
+!.env.example
+
+# Server environment files
+server/.env
+server/.env.*
+
+# Client environment files  
+client/.env
+client/.env.*
+
+# Dependencies
+node_modules/
+server/node_modules/
+client/node_modules/
+
+# Build outputs
+dist/
+build/
+.serverless/
+
+# Logs
+*.log
+logs/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+
 # Logs
 logs
 *.log
@@ -25,3 +62,5 @@ dist-ssr
 
 .config/
 !.env
+
+"@ | Out-File -FilePath .gitignore -Encoding utf8
