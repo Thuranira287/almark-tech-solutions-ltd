@@ -22,6 +22,7 @@
   },
   "dependencies": {
     "@netlify/blobs": "^10.0.8",
+    "@sendgrid/mail": "^8.1.6",
     "axios": "^1.12.2",
     "caniuse-lite": "^1.0.30001743",
     "dotenv": "^17.2.0",
