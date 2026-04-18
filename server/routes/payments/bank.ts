@@ -84,7 +84,7 @@ class BankPaymentService {
   async registerIPN(token: string): Promise<string> {
     try {
       const payload = {
-        url: process.env.BANK_IPN_URL || 'https://your-domain.com/api/bank/ipn',
+        url: process.env.BANK_IPN_URL || 'https://almarktechsolutions.netlify.app/api/bank/ipn',
         ipn_notification_type: 'GET'
       };
 
@@ -119,7 +119,7 @@ class BankPaymentService {
         currency: request.currency,
         amount: request.amount,
         description: `Payment for Quote ${request.quoteId} - Almark Tech Solutions`,
-        callback_url: process.env.BANK_CALLBACK_URL || 'https://your-domain.com/payment-success',
+        callback_url: process.env.BANK_CALLBACK_URL || 'https://almarktechsolutions.netlify.app/payment-success',
         notification_id: ipnId,
         billing_address: {
           email_address: request.customerInfo.email,
@@ -190,7 +190,7 @@ class BankPaymentService {
       bankName: bank.name,
       bankCode: bank.code,
       paybillNumber: bank.paybill,
-      accountNumber: '0716227616', // Almark's account
+      accountNumber: '0716227616',
       amount: amount,
       reference: reference,
       instructions: [

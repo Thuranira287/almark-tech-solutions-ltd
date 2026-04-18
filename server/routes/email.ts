@@ -36,8 +36,8 @@ export const sendQuoteReceipt: RequestHandler = async (req, res) => {
 
     // Email payload
     const msg = {
-      to: quoteData.customerInfo.email, // recipient
-      from: senderEmail,     // your verified sender
+      to: quoteData.customerInfo.email,
+      from: senderEmail,
       subject: `Your Quote Receipt – Almark Tech Solutions (ID: ${quoteData.quoteId})`,
       html: receiptHTML,
     };

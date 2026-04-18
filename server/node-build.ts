@@ -86,14 +86,14 @@ app.post("/api/send-quote-receipt", async (req, res) => {
 
     res.json({ success: true, message: "Quote processed successfully!" });
   } catch (err: any) {
-    console.error("❌ Error processing quote:", err);
+    console.error("Error processing quote:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
 // Callback URL (Safaricom will POST here after STK push)
 app.post("/api/mpesa/callback", (req, res) => {
-  console.log("📩 M-Pesa Callback:", JSON.stringify(req.body, null, 2));
+  console.log("M-Pesa Callback:", JSON.stringify(req.body, null, 2));
   // TODO: Save transaction status in DB
   res.json({ status: "Callback received successfully" });
 });
@@ -109,17 +109,17 @@ app.get("*", (req, res) => {
 // Start server
 app.listen(port, () => {
   console.log(`🚀 Almmark Tech Solutions server running on port ${port}`);
-  console.log(`📱 Frontend: http://localhost:${port}`);
-  console.log(`🔧 API: http://localhost:${port}/api`);
+  console.log(`Frontend: http://localhost:${port}`);
+  console.log(`API: http://localhost:${port}/api`);
 });
 
 // Graceful shutdown
 process.on("SIGTERM", () => {
-  console.log("🛑 Received SIGTERM, shutting down gracefully");
+  console.log("Received SIGTERM, shutting down gracefully");
   process.exit(0);
 });
 
 process.on("SIGINT", () => {
-  console.log("🛑 Received SIGINT, shutting down gracefully");
+  console.log("Received SIGINT, shutting down gracefully");
   process.exit(0);
 });
