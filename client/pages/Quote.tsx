@@ -378,7 +378,7 @@ export default function Quote() {
       }
 
       // Additional security: Don't send full card details to backend
-      console.log("⚠️ Credit card validation passed - In production, integrate with secure payment processor");
+      console.log("Credit card validation passed - In production, integrate with secure payment processor");
     }
 
     // Bank payment validation
@@ -464,10 +464,10 @@ export default function Quote() {
                     paymentSuccessMessage = "\n🔄 M-Pesa payment initiated! Check your phone for the payment prompt.";
                   }
                 } else {
-                  paymentSuccessMessage = `\n❌ M-Pesa payment failed: ${paymentResult.message}`;
+                  paymentSuccessMessage = `\n M-Pesa payment failed: ${paymentResult.message}`;
                 }
               } else {
-                paymentSuccessMessage = "\n⚠️ M-Pesa payment cancelled - phone number required.";
+                paymentSuccessMessage = "\n M-Pesa payment cancelled - phone number required.";
               }
             } else if (paymentMethod === "paypal") {
               const usdAmount = paymentService.convertCurrency(paymentAmount, 'KES', 'USD');
@@ -487,7 +487,7 @@ export default function Quote() {
                   window.open(paymentResult.data.approvalUrl, '_blank');
                 }, 2000);
               } else {
-                paymentSuccessMessage = `\n❌ PayPal payment failed: ${paymentResult.message}`;
+                paymentSuccessMessage = `\n PayPal payment failed: ${paymentResult.message}`;
               }
             } else if (paymentMethod === "bank") {
               console.log('Initiating bank payment:', { paymentAmount, quoteId, selectedBank });
@@ -503,14 +503,14 @@ export default function Quote() {
               console.log('Bank payment result:', paymentResult);
 
               if (paymentResult.success) {
-                paymentSuccessMessage = "\n🏦 Bank transfer instructions have been provided above. Please complete the transfer to proceed.";
+                paymentSuccessMessage = "\n Bank transfer instructions have been provided above. Please complete the transfer to proceed.";
               } else {
-                paymentSuccessMessage = `\n❌ Bank payment setup failed: ${paymentResult.message}`;
+                paymentSuccessMessage = `\n Bank payment setup failed: ${paymentResult.message}`;
               }
             }
           } catch (error) {
             console.error('Payment processing error:', error);
-            paymentSuccessMessage = "\n⚠️ Payment processing encountered an issue. Please contact us for assistance.";
+            paymentSuccessMessage = "\n Payment processing encountered an issue. Please contact us for assistance.";
           }
         }
 
@@ -522,7 +522,7 @@ export default function Quote() {
             : "";
 
         const confirmed = confirm(
-          `✅ Quote submitted successfully!\n\n` +
+          `Quote submitted successfully!\n\n` +
             `Quote ID: ${quoteId}\n` +
             `Total: KES ${totalPrice.toLocaleString()}\n` +
             paymentMessage +
