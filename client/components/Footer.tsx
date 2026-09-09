@@ -129,7 +129,7 @@ export default function Footer() {
               </div>
               <div className="flex items-center space-x-2">
                 <Mail className="h-4 w-4 text-brand-gold" />
-                <span className="text-gray-300">info@almarktech.com</span>
+                <span className="text-gray-300">info@almarktechsolutions.co.ke</span>
               </div>
               <a
                 href="https://wa.me/254716227616?text=Hello%20Almark%20Tech%20Solutions,%20I'm%20interested%20in%20your%20services"
