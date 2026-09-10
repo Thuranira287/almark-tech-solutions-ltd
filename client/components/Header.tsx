@@ -7,7 +7,7 @@ import { SiGmail } from "react-icons/si";
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const handleEmailClick =() => {
-    window.location.href = "mailto:info@almarktech.com";
+    window.location.href = "mailto:info@almarktech.co.ke";
   };
 
   const navLinks = [
