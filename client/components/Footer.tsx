@@ -73,7 +73,7 @@ export default function Footer() {
               >
               
 <img
-  src="/Almarklogo.png"
+  src="/Almark logo.jpg"
   alt="Almark Tech Solutions logo"
   className="h-12 w-12 rounded-full object-cover ring-2 ring-brand-gold/30 group-hover:ring-brand-gold/60 transition-all duration-300"
 />
