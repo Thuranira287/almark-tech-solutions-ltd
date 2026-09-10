@@ -1,3 +1,5 @@
+https://almarktechsolutions.netlify.app/* https://almarktechsolutions.co.ke/:splat 301!
+
 /sitemap.xml /sitemap.xml 200
 /robots.txt /robots.txt 200
 /* /index.html 200
