@@ -12,8 +12,6 @@ import {
   ArrowUpRight,
 } from "lucide-react";
 
-import almarkLogo from "../assets/Almark logo.jpg";
-
 export default function Footer() {
   const currentYear = new Date().getFullYear();
 
@@ -73,12 +71,12 @@ export default function Footer() {
                 className="inline-flex items-center gap-3 group"
                 aria-label="Almark Tech Solutions home"
               >
-                <img
-                  src={almarkLogo}
-                  alt="Almark Tech Solutions logo"
-                  className="h-12 w-12 rounded-full object-cover ring-2 ring-brand-gold/30 group-hover:ring-brand-gold/60 transition-all duration-300"
-                />
-
+              
+<img
+  src="/Almarklogo.png"
+  alt="Almark Tech Solutions logo"
+  className="h-12 w-12 rounded-full object-cover ring-2 ring-brand-gold/30 group-hover:ring-brand-gold/60 transition-all duration-300"
+/>
                 <div>
                   <h2 className="text-xl font-bold tracking-tight">
                     Almark Tech Solutions
