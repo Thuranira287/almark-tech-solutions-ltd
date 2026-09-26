@@ -1,0 +1,32 @@
+[build]
+  command = "npm run build:client"
+  functions = "netlify/functions"
+  publish = "dist/spa"
+
+
+[functions]
+  external_node_modules = ["express"]
+  node_bundler = "esbuild"
+
+
+# API proxy
+[[redirects]]
+  force = true
+  from = "/api/*"
+  status = 200
+  to = "/.netlify/functions/api/:splat"
+
+
+# Domain
+[[redirects]]
+  force = true
+  from = "https://almarktechsolutions.netlify.app/*"
+  status = 301
+  to = "https://almarktechsolutions.co.ke/:splat"
+
+
+# SPA fallback
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

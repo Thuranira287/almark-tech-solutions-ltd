@@ -1,0 +1,385 @@
+import { RequestHandler } from "express";
+import fetch from "node-fetch";
+import { mpesaInitiateSchema, formatZodError } from "../../lib/validation";
+import { logger } from "../../lib/logger";
+import {
+  assertQuoteAndAmount,
+  recordPendingPayment,
+  markPaymentCompleted,
+  markPaymentFailed,
+  PaymentValidationError,
+} from "../../lib/paymentGuard";
+
+// ---- Interfaces ----
+export interface MpesaPaymentRequest {
+  phoneNumber: string;
+  amount: number;
+  quoteId: string;
+  customerInfo: {
+    name: string;
+    email: string;
+  };
+}
+
+export interface MpesaConfig {
+  consumerKey: string;
+  consumerSecret: string;
+  businessShortCode: string;
+  passkey: string;
+  callbackUrl: string;
+  environment: "sandbox" | "production";
+}
+
+interface MpesaOAuthResponse {
+  access_token: string;
+  expires_in: string;
+  errorCode?: string;
+  errorMessage?: string;
+  error_description?: string;
+}
+
+interface MpesaSTKPushResponse {
+  MerchantRequestID: string;
+  CheckoutRequestID: string;
+  ResponseCode: string;
+  ResponseDescription: string;
+  CustomerMessage: string;
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+interface MpesaQueryResponse {
+  ResponseCode: string;
+  ResponseDescription: string;
+  MerchantRequestID: string;
+  CheckoutRequestID: string;
+  ResultCode: string;
+  ResultDesc: string;
+  errorCode?: string;
+  errorMessage?: string;
+}
+
+// ---- Config ----
+const mpesaConfig: MpesaConfig = {
+  consumerKey: process.env.MPESA_CONSUMER_KEY || "",
+  consumerSecret: process.env.MPESA_CONSUMER_SECRET || "",
+  businessShortCode: process.env.MPESA_SHORTCODE || "",
+  passkey: process.env.MPESA_PASSKEY || "",
+  callbackUrl: process.env.MPESA_CALLBACK_URL || "",
+  environment:
+    process.env.NODE_ENV === "production" ? "production" : "sandbox",
+};
+
+// ---- Service ----
+class MpesaService {
+  private baseUrl: string;
+
+  constructor() {
+    this.baseUrl =
+      mpesaConfig.environment === "production"
+        ? "https://api.safaricom.co.ke"
+        : "https://sandbox.safaricom.co.ke";
+  }
+
+  // Get OAuth token
+  async getAccessToken(): Promise<string> {
+    const auth = Buffer.from(
+      `${mpesaConfig.consumerKey}:${mpesaConfig.consumerSecret}`
+    ).toString("base64");
+
+    const response = await fetch(
+      `${this.baseUrl}/oauth/v1/generate?grant_type=client_credentials`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Basic ${auth}`,
+          "Content-Type": "application/json",
+        },
+      }
+    );
+
+    const data = (await response.json()) as MpesaOAuthResponse;
+
+    if (!response.ok) {
+      throw new Error(
+        `Failed to get access token: ${data.error_description || data.errorMessage || "Unknown error"}`
+      );
+    }
+
+    return data.access_token;
+  }
+
+  // Generate timestamp
+  generateTimestamp(): string {
+    const now = new Date();
+    return (
+      now.getFullYear().toString() +
+      ("0" + (now.getMonth() + 1)).slice(-2) +
+      ("0" + now.getDate()).slice(-2) +
+      ("0" + now.getHours()).slice(-2) +
+      ("0" + now.getMinutes()).slice(-2) +
+      ("0" + now.getSeconds()).slice(-2)
+    );
+  }
+
+  // Generate password
+  generatePassword(timestamp: string): string {
+    const data =
+      mpesaConfig.businessShortCode + mpesaConfig.passkey + timestamp;
+    return Buffer.from(data).toString("base64");
+  }
+
+  // Format phone number
+  formatPhoneNumber(phone: string): string {
+    let cleaned = phone.replace(/\D/g, "");
+    if (cleaned.startsWith("0")) {
+      cleaned = "254" + cleaned.slice(1);
+    } else if (cleaned.startsWith("7") || cleaned.startsWith("1")) {
+      cleaned = "254" + cleaned;
+    } else if (!cleaned.startsWith("254")) {
+      cleaned = "254" + cleaned;
+    }
+    return cleaned;
+  }
+
+  // Initiate STK Push
+  async initiateSTKPush(
+    request: MpesaPaymentRequest
+  ): Promise<MpesaSTKPushResponse> {
+    const accessToken = await this.getAccessToken();
+    const timestamp = this.generateTimestamp();
+    const password = this.generatePassword(timestamp);
+    const formattedPhone = this.formatPhoneNumber(request.phoneNumber);
+
+    const payload = {
+      BusinessShortCode: mpesaConfig.businessShortCode,
+      Password: password,
+      Timestamp: timestamp,
+      TransactionType: "CustomerPayBillOnline",
+      Amount: request.amount,
+      PartyA: formattedPhone,
+      PartyB: mpesaConfig.businessShortCode,
+      PhoneNumber: formattedPhone,
+      CallBackURL: mpesaConfig.callbackUrl,
+      AccountReference: `ALM-${request.quoteId}`,
+      TransactionDesc: `Payment for Quote ${request.quoteId} - Almark Tech Solutions`,
+    };
+
+    const response = await fetch(
+      `${this.baseUrl}/mpesa/stkpush/v1/processrequest`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = (await response.json()) as MpesaSTKPushResponse;
+
+    if (!response.ok) {
+      throw new Error(
+        `M-Pesa STK Push failed: ${data.errorMessage || "Unknown error"}`
+      );
+    }
+
+    return data;
+  }
+
+  // Query STK Push status
+  async querySTKPushStatus(
+    checkoutRequestId: string
+  ): Promise<MpesaQueryResponse> {
+    const accessToken = await this.getAccessToken();
+    const timestamp = this.generateTimestamp();
+    const password = this.generatePassword(timestamp);
+
+    const payload = {
+      BusinessShortCode: mpesaConfig.businessShortCode,
+      Password: password,
+      Timestamp: timestamp,
+      CheckoutRequestID: checkoutRequestId,
+    };
+
+    const response = await fetch(
+      `${this.baseUrl}/mpesa/stkpushquery/v1/query`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(payload),
+      }
+    );
+
+    const data = (await response.json()) as MpesaQueryResponse;
+
+    if (!response.ok) {
+      throw new Error(
+        `M-Pesa query failed: ${data.errorMessage || "Unknown error"}`
+      );
+    }
+
+    return data;
+  }
+}
+
+const mpesaService = new MpesaService();
+
+// ---- Handlers ----
+
+// Initiate M-Pesa payment
+export const initiateMpesaPayment: RequestHandler = async (req, res) => {
+  try {
+    const parsed = mpesaInitiateSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: formatZodError(parsed.error) });
+    }
+    const { phoneNumber, amount, quoteId } = parsed.data;
+
+    if (amount < 1 || amount > 70000) {
+      return res.status(400).json({
+        success: false,
+        message: "Amount must be between KES 1 and KES 70,000",
+      });
+    }
+
+    // Server-side authority check: quoteId must exist and amount must not
+    // exceed the real outstanding balance stored in the database.
+    const quote = await assertQuoteAndAmount(quoteId, amount);
+
+    logger.debug(
+      `Initiating M-Pesa payment: KES ${amount} from ${phoneNumber} for quote ${quoteId}`
+    );
+
+    const result = await mpesaService.initiateSTKPush({
+      phoneNumber,
+      amount,
+      quoteId,
+      customerInfo: { name: quote.customerName, email: quote.customerEmail },
+    });
+
+    await recordPendingPayment({
+      quoteId: quote.id,
+      method: "mpesa",
+      amount,
+      currency: "KES",
+      providerRef: result.CheckoutRequestID,
+    });
+
+    res.json({
+      success: true,
+      message: "M-Pesa payment initiated successfully",
+      data: result,
+    });
+  } catch (error) {
+    if (error instanceof PaymentValidationError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    console.error("M-Pesa payment initiation error:", error);
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to initiate M-Pesa payment",
+    });
+  }
+};
+
+// Query M-Pesa payment status
+export const queryMpesaPayment: RequestHandler = async (req, res) => {
+  try {
+    const { checkoutRequestId } = req.params;
+
+    if (!checkoutRequestId) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing checkoutRequestId parameter",
+      });
+    }
+
+    const result = await mpesaService.querySTKPushStatus(checkoutRequestId);
+
+    res.json({
+      success: true,
+      data: result,
+    });
+  } catch (error) {
+    console.error("M-Pesa query error:", error);
+    res.status(500).json({
+      success: false,
+      message:
+        error instanceof Error
+          ? error.message
+          : "Failed to query M-Pesa payment",
+    });
+  }
+};
+
+// M-Pesa callback handler
+//
+// Safaricom's Daraja API does not sign callbacks, so we protect this URL
+// with a shared secret in the query string (set MPESA_CALLBACK_URL to
+// something like https://yourdomain/api/payments/mpesa/callback?secret=...
+// and set MPESA_CALLBACK_SECRET to the same value). Requests without a
+// matching secret are rejected before touching the database.
+export const handleMpesaCallback: RequestHandler = async (req, res) => {
+  try {
+    const expectedSecret = process.env.MPESA_CALLBACK_SECRET;
+    if (expectedSecret && req.query.secret !== expectedSecret) {
+      console.warn("M-Pesa callback rejected: missing/invalid secret");
+      return res.status(403).json({ success: false });
+    }
+
+    logger.debug("M-Pesa Callback received:", JSON.stringify(req.body, null, 2));
+
+    const callbackData = req.body;
+
+    if (callbackData.Body?.stkCallback) {
+      const callback = callbackData.Body.stkCallback;
+      const resultCode = callback.ResultCode;
+      const checkoutRequestId = callback.CheckoutRequestID;
+
+      if (resultCode === 0) {
+        logger.debug(
+          `M-Pesa payment successful for CheckoutRequestID: ${checkoutRequestId}`
+        );
+
+        const callbackMetadata = callback.CallbackMetadata?.Item || [];
+        const paymentDetails = {
+          amount: callbackMetadata.find((item: any) => item.Name === "Amount")
+            ?.Value,
+          mpesaReceiptNumber: callbackMetadata.find(
+            (item: any) => item.Name === "MpesaReceiptNumber"
+          )?.Value,
+          transactionDate: callbackMetadata.find(
+            (item: any) => item.Name === "TransactionDate"
+          )?.Value,
+          phoneNumber: callbackMetadata.find(
+            (item: any) => item.Name === "PhoneNumber"
+          )?.Value,
+        };
+
+        logger.debug("Payment details:", paymentDetails);
+        // Idempotent: a duplicate callback for the same CheckoutRequestID
+        // (Safaricom does retry) will no-op on the second call.
+        await markPaymentCompleted(checkoutRequestId, { ...callback, paymentDetails });
+      } else {
+        logger.debug(
+          `M-Pesa payment failed for CheckoutRequestID: ${checkoutRequestId}`,
+          callback.ResultDesc
+        );
+        await markPaymentFailed(checkoutRequestId, callback);
+      }
+    }
+
+    res.json({ success: true });
+  } catch (error) {
+    console.error("M-Pesa callback error:", error);
+    res.status(500).json({ success: false });
+  }
+};

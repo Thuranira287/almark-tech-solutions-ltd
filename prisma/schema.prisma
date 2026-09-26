@@ -1,0 +1,128 @@
+// Prisma schema — PostgreSQL
+// Run `npx prisma migrate dev --name init` after setting DATABASE_URL in .env
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum QuoteStatus {
+  pending
+  partially_paid
+  paid
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  completed
+  failed
+  cancelled
+}
+
+enum PaymentMethod {
+  mpesa
+  paypal
+  creditcard
+}
+
+enum TestimonialStatus {
+  pending
+  approved
+  rejected
+}
+
+model Testimonial {
+  id          String            @id @default(cuid())
+  name        String
+  email       String // kept private — never rendered publicly, only used to follow up if needed
+  company     String?
+  projectName String? // what they're reviewing, e.g. "Website", "Tusome CBE", free text
+  rating      Int // 1-5
+  message     String
+  status      TestimonialStatus @default(pending)
+  createdAt   DateTime          @default(now())
+
+  @@map("testimonials")
+}
+
+model AdminUser {
+  id           String    @id @default(cuid())
+  email        String    @unique
+  passwordHash String
+  totpSecret   String? // optional per-user 2FA; null = 2FA off for this user
+  createdAt    DateTime  @default(now())
+  lastLoginAt  DateTime?
+
+  @@map("admin_users")
+}
+
+model Service {
+  id          String   @id // matches the frontend service id, e.g. "website-basic"
+  category    String
+  name        String
+  description String
+  basePrice   Int // price in KES (integer, no decimals — matches M-Pesa/local convention)
+  priceRange  String
+  active      Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  quoteServices QuoteService[]
+
+  @@map("services")
+}
+
+model Quote {
+  id          String      @id @default(cuid())
+  quoteRef    String      @unique // human-facing ref, e.g. ALM-XXXXXXX
+  customerName  String
+  customerEmail String
+  customerPhone String
+  company     String?
+  message     String?
+  totalPrice  Int // server-computed sum of selected services, in KES — never trust a client-supplied total
+  paidAmount  Int         @default(0)
+  status      QuoteStatus @default(pending)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  services QuoteService[]
+  payments Payment[]
+
+  @@map("quotes")
+}
+
+model QuoteService {
+  id        String  @id @default(cuid())
+  quoteId   String
+  serviceId String
+  priceAtQuote Int // price snapshot at the time the quote was created, in case Service.basePrice changes later
+
+  quote   Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  service Service @relation(fields: [serviceId], references: [id])
+
+  @@unique([quoteId, serviceId])
+  @@map("quote_services")
+}
+
+model Payment {
+  id          String        @id @default(cuid())
+  quoteId     String
+  method      PaymentMethod
+  amount      Int // amount requested for this payment attempt, in KES (or USD*100 for PayPal — see currency)
+  currency    String        @default("KES")
+  status      PaymentStatus @default(pending)
+  providerRef String?       @unique // CheckoutRequestID (mpesa) / order id (paypal) / OrderTrackingId (pesapal)
+  rawCallback Json? // last callback payload received, for audit/debugging
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
