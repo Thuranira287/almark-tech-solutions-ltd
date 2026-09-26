@@ -1,10 +1,3 @@
-// server/routes/quotes.ts
-// This is the fix for the client-trusted pricing bug: the server is now the
-// only place a quote's total price is computed. The client sends service
-// IDs, never prices; the server looks up current prices from the database
-// and stores a snapshot on the quote. Every payment route below validates
-// the requested amount against this stored total, not against anything the
-// client claims.
 import { RequestHandler } from "express";
 import { prisma } from "../db";
 import { createQuoteSchema, formatZodError } from "../lib/validation";

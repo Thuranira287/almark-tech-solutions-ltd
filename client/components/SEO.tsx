@@ -3,16 +3,16 @@ import { SITE_URL } from "@/data/siteRoutes";
 
 export interface BreadcrumbItem {
   label: string;
-  path: string; // relative, e.g. "/" or "/quote"
+  path: string; 
 }
 
 interface SEOProps {
   title: string;
   description: string;
-  path: string; // canonical path for this page, e.g. "/quote"
-  breadcrumbs?: BreadcrumbItem[]; // omit for pages that shouldn't show/emit breadcrumbs (e.g. Home)
+  path: string; 
+  breadcrumbs?: BreadcrumbItem[]; 
   noindex?: boolean;
-  image?: string; // absolute or root-relative OG image path
+  image?: string; 
 }
 
 export default function SEO({ title, description, path, breadcrumbs, noindex, image }: SEOProps) {

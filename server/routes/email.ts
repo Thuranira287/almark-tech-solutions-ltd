@@ -39,10 +39,6 @@ const sendReceiptSchema = z.object({
   paymentAmount: z.number().min(0).optional().default(0),
 });
 
-// The receipt is now built entirely from the quote record already stored in
-// the database (created via POST /api/quotes) rather than from whatever the
-// client claims — a client can no longer inflate or forge totals/services in
-// the email that gets sent out under Almark's name.
 export const sendQuoteReceipt: RequestHandler = async (req, res) => {
   try {
     const parsed = sendReceiptSchema.safeParse(req.body);
@@ -93,8 +89,7 @@ export const sendQuoteReceipt: RequestHandler = async (req, res) => {
 
     const emailBodyHTML = generateEmailBodyHTML(quoteData);
 
-    // Email payload — the full itemized receipt is the attached PDF; the
-    // email body itself is a short, professional notice.
+    // Email payload
     const msg = {
       to: quoteData.customerInfo.email,
       from: senderEmail,

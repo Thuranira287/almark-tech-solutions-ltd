@@ -179,9 +179,7 @@ class PayPalService {
     }
   }
 
-  // Verifies a webhook's authenticity via PayPal's own verification API,
-  // instead of trusting whatever hits /paypal/webhook. Requires
-  // PAYPAL_WEBHOOK_ID (from the webhook's config in the PayPal dashboard).
+  // PAYPAL_WEBHOOK_ID 
   async verifyWebhookSignature(headers: Record<string, any>, body: any): Promise<boolean> {
     const webhookId = process.env.PAYPAL_WEBHOOK_ID;
     if (!webhookId) {
@@ -227,15 +225,7 @@ export const createPayPalPayment: RequestHandler = async (req, res) => {
     const { amount: amountKes, quoteId } = parsed.data;
     const returnUrl = parsed.data.returnUrl || `${process.env.SITE_URL || ''}/quote?payment=paypal-success`;
     const cancelUrl = parsed.data.cancelUrl || `${process.env.SITE_URL || ''}/quote?payment=paypal-cancelled`;
-
-    // Server-side authority check: quoteId must exist and the requested KES
-    // amount must not exceed the real outstanding balance stored in the
-    // database — the same guard every other payment method goes through.
     const quote = await assertQuoteAndAmount(quoteId, amountKes);
-
-    // PayPal settles in USD, so convert using a live rate fetched
-    // server-side. The client never supplies the USD figure — that was the
-    // gap that let someone under-convert and pay less than the real total.
     const rate = await getKesToUsdRate();
     const usdAmount = Math.round(amountKes * rate * 100) / 100;
     if (usdAmount < 0.01) {
@@ -256,7 +246,7 @@ export const createPayPalPayment: RequestHandler = async (req, res) => {
     await recordPendingPayment({
       quoteId: quote.id,
       method: 'paypal',
-      amount: amountKes, // stored in KES, matching the quote's own currency
+      amount: amountKes,
       currency: 'KES',
       providerRef: result.id,
     });
@@ -375,8 +365,6 @@ export const handlePayPalWebhook: RequestHandler = async (req, res) => {
 
     const eventType = req.body.event_type;
     const resource = req.body.resource;
-    // orderId is what we stored as providerRef when the order was created;
-    // capture events reference it via supplementary_data.related_ids.order_id
     const orderId = resource?.supplementary_data?.related_ids?.order_id || resource?.id;
 
     switch (eventType) {

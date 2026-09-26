@@ -3,14 +3,10 @@ import Breadcrumbs from "@/components/Breadcrumbs";
 import { siteRoutes } from "@/data/siteRoutes";
 
 interface PageHeadProps {
-  path: string; // must match a path in client/data/siteRoutes.ts
-  showBreadcrumbs?: boolean; // default true; set false for Home
+  path: string; 
+  showBreadcrumbs?: boolean; 
 }
 
-// Drop this at the top of every public page's returned JSX. It looks up
-// title/description/breadcrumb-label from siteRoutes.ts, so there's exactly
-// one place (siteRoutes.ts) to edit per page — this component, the sitemap,
-// and the visible breadcrumb trail can never drift out of sync.
 export default function PageHead({ path, showBreadcrumbs = true }: PageHeadProps) {
   const route = siteRoutes.find((r) => r.path === path);
   if (!route) {

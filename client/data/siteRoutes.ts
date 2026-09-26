@@ -1,17 +1,9 @@
-// client/data/siteRoutes.ts
-//
-// Single source of truth for every public, indexable route. Used to:
-//   1. Generate public/sitemap.xml (scripts/generate-sitemap.ts)
-//   2. Drive per-page <title>/<meta description>/canonical (client/components/SEO.tsx)
-//   3. Drive the visible breadcrumb trail and its BreadcrumbList JSON-LD
-// Add a route here and all three stay in sync automatically — that's the
-// "auto-generated" part: nothing below is hand-copied into a second file.
 export interface SiteRoute {
   path: string;
   label: string; // breadcrumb / nav label
-  title: string; // <title> — kept under ~60 chars
-  description: string; // meta description — kept under ~160 chars
-  priority: number; // sitemap priority, 0.0-1.0
+  title: string; // <title> 
+  description: string; // meta description
+  priority: number; 
   changefreq: "daily" | "weekly" | "monthly" | "yearly";
 }
 

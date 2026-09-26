@@ -8,11 +8,6 @@ import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import TestimonialsPanel from '@/components/admin/TestimonialsPanel';
 import SEO from '@/components/SEO';
 
-// This page is intentionally not linked from Header/Footer or any other
-// public page — it's only reachable by someone who navigates to /admin
-// directly, and everything it shows requires a valid session with the
-// server (see server/routes/admin.ts + server/lib/adminAuth.ts).
-
 interface QuoteRow {
   quoteId: string;
   customerName: string;

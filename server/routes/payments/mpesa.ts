@@ -247,8 +247,7 @@ export const initiateMpesaPayment: RequestHandler = async (req, res) => {
       });
     }
 
-    // Server-side authority check: quoteId must exist and amount must not
-    // exceed the real outstanding balance stored in the database.
+    // Server-side authority check
     const quote = await assertQuoteAndAmount(quoteId, amount);
 
     logger.debug(
@@ -321,12 +320,6 @@ export const queryMpesaPayment: RequestHandler = async (req, res) => {
 };
 
 // M-Pesa callback handler
-//
-// Safaricom's Daraja API does not sign callbacks, so we protect this URL
-// with a shared secret in the query string (set MPESA_CALLBACK_URL to
-// something like https://yourdomain/api/payments/mpesa/callback?secret=...
-// and set MPESA_CALLBACK_SECRET to the same value). Requests without a
-// matching secret are rejected before touching the database.
 export const handleMpesaCallback: RequestHandler = async (req, res) => {
   try {
     const expectedSecret = process.env.MPESA_CALLBACK_SECRET;
@@ -365,8 +358,7 @@ export const handleMpesaCallback: RequestHandler = async (req, res) => {
         };
 
         logger.debug("Payment details:", paymentDetails);
-        // Idempotent: a duplicate callback for the same CheckoutRequestID
-        // (Safaricom does retry) will no-op on the second call.
+        // Idempotent
         await markPaymentCompleted(checkoutRequestId, { ...callback, paymentDetails });
       } else {
         logger.debug(

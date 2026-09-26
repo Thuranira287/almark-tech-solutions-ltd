@@ -1,14 +1,6 @@
-// server/lib/exchangeRate.ts
-//
-// Real KES→USD conversion for PayPal (which settles in USD), replacing the
-// old hardcoded rate. Cached for an hour so we're not hitting the rate API
-// on every checkout click. If the API is unreachable and we have no cached
-// rate yet, we fail closed (block the PayPal payment) rather than guess —
-// a wrong guess either shortchanges the business or overcharges the
-// customer, and neither is acceptable for something touching real money.
 import fetch from "node-fetch";
 
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const CACHE_TTL_MS = 60 * 60 * 1000;
 let cachedRate: { rate: number; fetchedAt: number } | null = null;
 
 export async function getKesToUsdRate(): Promise<number> {

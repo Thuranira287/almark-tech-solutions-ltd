@@ -39,10 +39,7 @@ class PaymentService {
     }
   }
 
-  // Create a quote server-side. The server looks up current prices from the
-  // database and returns the authoritative quoteId + totalPrice — this is
-  // what every payment call below is validated against, so a tampered
-  // client-side total can no longer be sent to a payment provider.
+  // Create a quote server-side.
   async createQuote(
     serviceIds: string[],
     customerInfo: { name: string; email: string; phone: string; company?: string; message?: string },
@@ -223,10 +220,7 @@ class PaymentService {
     }
   }
 
-  // PayPal specific methods. `amount` is in KES — the server converts to
-  // USD itself using a live exchange rate and validates it against the
-  // real quote balance, so no currency math needs to happen (or be
-  // trusted) on the client anymore.
+  // PayPal specific methods.
   async createPayPalPayment(amount: number, quoteId: string, customerInfo: any): Promise<PaymentResponse> {
     try {
       const currentUrl = window.location.origin;
@@ -263,8 +257,7 @@ class PaymentService {
     }
   }
 
-  // Card payment via Stripe Checkout — redirects the customer to a
-  // Stripe-hosted page. No card data is ever collected on this site.
+  // Card payment via Stripe Checkout
   async createCardCheckoutSession(amount: number, quoteId: string): Promise<PaymentResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/card/create-checkout-session`, {
@@ -318,7 +311,7 @@ class PaymentService {
     return parseFloat((amount * rate).toFixed(2));
   }
 
-  // Payment status polling (useful for M-Pesa and bank payments)
+  // Payment status polling
   async pollPaymentStatus(
     paymentMethod: string, 
     paymentId: string, 

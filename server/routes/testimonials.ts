@@ -1,10 +1,3 @@
-// server/routes/testimonials.ts
-//
-// Real reviews only. Anyone can submit one (rate-limited against spam),
-// but nothing shows up publicly until an admin approves it — that's the
-// line between "customers can genuinely tell us how we did" and "random
-// spam/abuse goes live on the site unmoderated." Never seed this with
-// invented reviews; an empty, honest list is worth more than a fake full one.
 import { RequestHandler } from "express";
 import { escapeHtml } from "../lib/sanitize";
 import { prisma } from "../db";
@@ -40,7 +33,7 @@ export const submitTestimonial: RequestHandler = async (req, res) => {
   }
 };
 
-// Public — only ever returns approved reviews.
+// Public
 export const listApprovedTestimonials: RequestHandler = async (_req, res) => {
   try {
     const testimonials = await prisma.testimonial.findMany({

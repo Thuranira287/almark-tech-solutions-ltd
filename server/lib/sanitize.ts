@@ -1,4 +1,3 @@
-// server/lib/sanitize.ts
 export function escapeHtml(input: unknown): string {
   const str = String(input ?? "");
   return str

@@ -1,10 +1,3 @@
-// scripts/generate-sitemap.ts
-//
-// Regenerates public/sitemap.xml from client/data/siteRoutes.ts — the
-// single source of truth for public routes. Run automatically before every
-// build (see the "build" script in package.json), so the sitemap can never
-// drift out of sync with the routes actually in the app: add a route to
-// siteRoutes.ts and it appears here on the next build, nothing to hand-edit.
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";

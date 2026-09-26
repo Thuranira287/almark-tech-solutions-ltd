@@ -1,13 +1,3 @@
-// scripts/create-admin.ts
-//
-// Creates (or resets the password of) an admin account directly in the
-// database — the only way to make the very first admin, since the HTTP
-// endpoint that creates new admins requires already being logged in as one.
-//
-// Usage:
-//   npx tsx scripts/create-admin.ts admin@almarktechsolutions.co.ke "a strong password"
-//
-// Requires DATABASE_URL to be set (reads from .env via dotenv).
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
 import { authenticator } from "otplib";

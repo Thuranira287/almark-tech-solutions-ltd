@@ -7,11 +7,6 @@ export interface PortfolioProject {
   category: string;
 }
 
-// Real projects, as provided by the team, with descriptions pulled from
-// each project's own README/docs rather than guessed from a logo. Only
-// Almark Tech Solutions and TechBlog AI carry a `url` — that's what
-// determines whether "Visit site" shows on the card, so keep url unset
-// until a project is actually reachable at a public link.
 export const portfolioProjects: PortfolioProject[] = [
   {
     name: "Almark Tech Solutions",

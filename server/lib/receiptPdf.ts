@@ -1,8 +1,3 @@
-// server/lib/receiptPdf.ts
-//
-// Generates the quote receipt as a PDF, built entirely from the server-side
-// quote record (see server/routes/quotes.ts) — never from client input.
-// Rendered in memory, no filesystem writes.
 import PDFDocument from "pdfkit";
 
 export interface ReceiptPdfData {

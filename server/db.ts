@@ -1,7 +1,3 @@
-// server/db.ts
-// Single shared Prisma client. Reused across requests (and across Netlify
-// function invocations within the same warm container) to avoid exhausting
-// Postgres connections.
 import { PrismaClient } from "@prisma/client";
 
 declare global {

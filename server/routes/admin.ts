@@ -1,6 +1,3 @@
-// server/routes/admin.ts
-// Internal-only routes — not linked from any public page. Every route but
-// login requires a valid per-user session (see server/lib/adminAuth.ts).
 import { RequestHandler } from "express";
 import { z } from "zod";
 import rateLimit from "express-rate-limit";
@@ -16,8 +13,7 @@ import {
   COOKIE_NAME,
 } from "../lib/adminAuth";
 
-// Strict limiter on login specifically — this is the one endpoint an
-// attacker could try to brute-force credentials against.
+// Strict limiter
 export const adminLoginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10 });
 
 const loginSchema = z.object({
@@ -35,9 +31,6 @@ export const adminLogin: RequestHandler = async (req, res) => {
 
   try {
     const user = await prisma.adminUser.findUnique({ where: { email: email.toLowerCase() } });
-    // Always run a bcrypt compare, even for a missing user (against a dummy
-    // hash), so a login attempt for a nonexistent email doesn't respond
-    // measurably faster and leak which emails are registered.
     const passwordOk = await verifyPassword(
       password,
       user?.passwordHash || "$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinval",

@@ -1,13 +1,3 @@
-// server/routes/payments/card.ts
-//
-// Credit/debit cards are handled via Stripe Checkout (a Stripe-hosted
-// redirect page), NOT a card-number form on our own site. This is a
-// deliberate security choice: collecting raw PAN/CVV on your own server —
-// which the previous version's UI did, even though nothing actually sent it
-// anywhere — puts you in PCI-DSS scope (SAQ-D territory) with real
-// compliance obligations. Redirecting to Stripe Checkout keeps your
-// server out of card-data scope entirely (SAQ-A) because your code never
-// sees a card number.
 import { RequestHandler } from "express";
 import Stripe from "stripe";
 import { z } from "zod";
@@ -38,8 +28,7 @@ export const createCardCheckoutSession: RequestHandler = async (req, res) => {
     }
     const { quoteId, amount } = parsed.data;
 
-    // Server-side authority check: quoteId must exist and amount must not
-    // exceed the real outstanding balance stored in the database.
+    // Server-side authority check
     const quote = await assertQuoteAndAmount(quoteId, amount);
 
     const siteUrl = process.env.SITE_URL || "https://almarktechsolutions.co.ke";
@@ -85,9 +74,7 @@ export const createCardCheckoutSession: RequestHandler = async (req, res) => {
   }
 };
 
-// Stripe webhook — signature-verified against the raw request body (mounted
-// with express.raw() in server/index.ts, ahead of the global JSON parser,
-// since Stripe's signature check requires the exact unparsed bytes).
+// Stripe webhook
 export const handleStripeWebhook: RequestHandler = async (req, res) => {
   const signature = req.headers["stripe-signature"];
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;

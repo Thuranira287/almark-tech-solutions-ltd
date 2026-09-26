@@ -1,9 +1,7 @@
-// server/routes/payments/core.ts
 import { Request, Response } from "express";
 import { prisma } from "../../db";
 
-// Generic status lookup across all payment methods, backed by the database
-// (previously a hardcoded stub that always returned "pending").
+// Generic status 
 export const getPaymentStatus = async (req: Request, res: Response) => {
   try {
     const { paymentMethod, paymentId } = req.params;

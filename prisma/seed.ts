@@ -1,8 +1,4 @@
 // prisma/seed.ts
-// Seeds the services table from the same catalog previously hardcoded in
-// client/pages/Quote.tsx. This becomes the single source of truth for
-// pricing — the frontend now fetches this list instead of hardcoding it.
-//
 // Run with: npx prisma db seed
 import { PrismaClient } from "@prisma/client";
 

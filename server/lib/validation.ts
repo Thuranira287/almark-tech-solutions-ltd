@@ -1,6 +1,3 @@
-// server/lib/validation.ts
-// Central zod schemas. Every route that accepts a body should validate
-// against one of these instead of trusting req.body directly.
 import { z } from "zod";
 
 export const customerInfoSchema = z.object({
@@ -25,7 +22,7 @@ export const mpesaInitiateSchema = z.object({
 });
 
 export const paypalCreateSchema = z.object({
-  amount: z.number().positive(), // KES — validated against the real quote balance server-side
+  amount: z.number().positive(), 
   quoteId: z.string().min(1),
   returnUrl: z.string().url().optional(),
   cancelUrl: z.string().url().optional(),

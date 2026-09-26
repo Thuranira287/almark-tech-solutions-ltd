@@ -1,9 +1,3 @@
-// server/routes/payments/index.ts
-//
-// Minimal payment surface by design: M-Pesa, PayPal, and card (via Stripe
-// Checkout). Bank transfer/Pesapal was dropped intentionally — fewer
-// integrations means a smaller attack surface and less to keep patched and
-// monitored.
 import express from "express";
 import {
   createPayPalPayment,
@@ -39,8 +33,5 @@ paymentsRouter.post("/paypal/:orderId/capture", capturePayPalPayment);
 paymentsRouter.get("/paypal/:orderId/details", getPayPalPaymentDetails);
 paymentsRouter.post("/paypal/webhook", handlePayPalWebhook);
 
-// Card (Stripe Checkout — no raw card data ever touches this server)
+// Card
 paymentsRouter.post("/card/create-checkout-session", createCardCheckoutSession);
-// Note: the Stripe webhook itself is mounted separately in server/index.ts,
-// ahead of the JSON body parser, because signature verification needs the
-// raw request body.

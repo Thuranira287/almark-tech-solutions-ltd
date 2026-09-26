@@ -1,4 +1,4 @@
-Contact: mailto:info@almarktech.com
+Contact: mailto:info@almarktechsolutions.co.ke
 Contact: https://wa.me/254716227616
 Preferred-Languages: en
 Canonical: https://almarktechsolutions.co.ke/.well-known/security.txt

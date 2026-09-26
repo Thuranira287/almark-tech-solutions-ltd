@@ -28,9 +28,7 @@ export interface Service {
   priceRange: string;
 }
 
-// Display copy only — the server (server/prisma/seed.ts, server/routes/quotes.ts)
-// is the source of truth for actual pricing. Keep the two in sync if you add
-// or reprice a service here.
+// Display 
 export const quoteServices: Service[] = [
   // Core IT & Software Services
   {

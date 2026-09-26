@@ -1,9 +1,3 @@
-// server/lib/adminAuth.ts
-//
-// Per-person admin accounts, stored in Postgres (AdminUser), instead of one
-// shared ADMIN_PASSWORD env var. Sessions are a signed, httpOnly cookie
-// carrying the admin's user id — nothing you can read or forge from the
-// browser, and nothing stored server-side (no session table to manage).
 import { RequestHandler } from "express";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
@@ -69,12 +63,9 @@ export async function verifyPassword(plain: string, hash: string): Promise<boole
   return bcrypt.compare(plain, hash);
 }
 
-// Optional second factor, per admin user. If the user's totpSecret is null,
-// 2FA is off for them and this always passes. Generate a secret once with
-// `authenticator.generateSecret()` (see SETUP_GUIDE.md) when creating or
-// updating an admin account.
+// 2FA 
 export function checkTotp(totpSecret: string | null, candidate: string | undefined): boolean {
-  if (!totpSecret) return true; // 2FA not configured for this user — skip
+  if (!totpSecret) return true;
   if (!candidate) return false;
   try {
     return authenticator.check(candidate, totpSecret);
@@ -84,12 +75,7 @@ export function checkTotp(totpSecret: string | null, candidate: string | undefin
 }
 
 // --- IP allowlist, with CIDR support (IPv4) ---
-//
-// ADMIN_IP_ALLOWLIST is a comma-separated list of exact IPs and/or IPv4
-// CIDR ranges, e.g. "41.90.64.12,102.0.0.0/24". If unset, every IP is
-// allowed (still gated by password/2FA). IPv6 entries are matched as exact
-// strings only — no IPv6 CIDR support, since that's rarely what a small
-// fixed allowlist of office/home connections needs.
+// ADMIN_IP_ALLOWLIST 
 function ipv4ToInt(ip: string): number | null {
   const parts = ip.split(".").map(Number);
   if (parts.length !== 4 || parts.some((p) => Number.isNaN(p) || p < 0 || p > 255)) return null;
@@ -117,9 +103,8 @@ export function checkIpAllowlist(ip: string | undefined): boolean {
     .split(",")
     .map((e) => e.trim())
     .filter(Boolean);
-  if (allowlist.length === 0) return true; // not configured — skip
+  if (allowlist.length === 0) return true; 
   if (!ip) return false;
-  // Normalize IPv4-mapped IPv6 addresses (::ffff:1.2.3.4) for a plain match
   const normalized = ip.startsWith("::ffff:") ? ip.slice(7) : ip;
   return allowlist.some((entry) => ipMatchesEntry(normalized, entry));
 }

@@ -1,14 +1,3 @@
-// server/node-build.ts
-//
-// Standalone Node entry point for deployment targets other than Netlify
-// Functions (Render, Railway, a plain VPS, etc.) — `npm start` runs this.
-// It must not define its own API routes: every route already exists,
-// properly validated, inside createServer() (server/index.ts). This file
-// used to duplicate /api/send-quote-receipt and /api/mpesa/callback with
-// no server-side price validation and no webhook signature check —
-// exactly the vulnerabilities the rest of this app's payment code exists
-// to close. Removed; this file now only serves the built SPA and static
-// assets around the same `app` everyone else uses.
 import path from "path";
 import express from "express";
 import { createServer } from "./index";

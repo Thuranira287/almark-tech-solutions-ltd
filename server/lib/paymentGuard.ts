@@ -1,9 +1,3 @@
-// server/lib/paymentGuard.ts
-// Shared logic every payment-initiation route (mpesa/paypal/bank) must go
-// through: look up the quote server-side, and reject any requested amount
-// that exceeds the real outstanding balance. This is what prevents the
-// "pay KES 1 for a KES 35,000 quote" bypass — the client can no longer
-// dictate what a quote costs, only how much of the real balance to pay now.
 import { prisma } from "../db";
 
 export type PaymentMethodType = "mpesa" | "paypal" | "bank" | "creditcard";
@@ -28,7 +22,7 @@ export async function assertQuoteAndAmount(quoteRef: string, requestedAmount: nu
 }
 
 export async function recordPendingPayment(opts: {
-  quoteId: string; // internal Quote.id (not quoteRef)
+  quoteId: string;
   method: PaymentMethodType;
   amount: number;
   currency: string;
@@ -46,8 +40,7 @@ export async function recordPendingPayment(opts: {
   });
 }
 
-// Marks a payment completed and rolls the amount into the quote's paidAmount,
-// idempotently — a duplicate callback for the same providerRef is a no-op.
+// Payment completed and rolls the amount into the quote's paidAmount
 export async function markPaymentCompleted(providerRef: string, rawCallback?: unknown) {
   return prisma.$transaction(async (tx) => {
     const payment = await tx.payment.findUnique({ where: { providerRef } });

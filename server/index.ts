@@ -56,16 +56,13 @@ export function createServer() {
 
   const app = express();
 
-  // Netlify (and most PaaS hosts) sit behind a reverse proxy, so req.ip
-  // must be read from X-Forwarded-For to reflect the real client IP —
-  // needed for the admin IP allowlist and for rate limiting to key on the
-  // right address rather than the proxy's.
+  // Netlify 
   app.set("trust proxy", 1);
 
   // Security headers
   app.use(helmet());
 
-  // CORS allowlist — comma-separated origins in ALLOWED_ORIGINS.
+  // CORS allowlist
   const allowedOrigins = (process.env.ALLOWED_ORIGINS || "")
     .split(",")
     .map((o) => o.trim())
@@ -80,13 +77,11 @@ export function createServer() {
         if (originAllowlist.includes(origin)) return callback(null, true);
         callback(new Error(`Origin ${origin} not allowed by CORS`));
       },
-      credentials: true, // required so the admin session cookie is sent/received
+      credentials: true, 
     }),
   );
 
-  // Stripe webhook needs the raw, unparsed request body to verify its
-  // signature, so it's mounted here — before express.json() below touches
-  // the body at all.
+  // Stripe webhook
   app.post(
     "/api/payments/card/webhook",
     express.raw({ type: "application/json" }),
@@ -105,20 +100,18 @@ export function createServer() {
   app.use("/api/payments/card/create-checkout-session", paymentLimiter);
   app.use("/api/send-quote-receipt", paymentLimiter);
   app.use("/api/admin/login", adminLoginLimiter);
-  // Testimonial submissions are public and unauthenticated, so they get
-  // their own tight limit — this is the other endpoint (besides payments)
-  // that's worth protecting from spam/abuse specifically.
+
   const testimonialLimiter = rateLimit({ windowMs: 60 * 60 * 1000, limit: 5 });
   app.use("/api/testimonials", (req, res, next) => (req.method === "POST" ? testimonialLimiter(req, res, next) : next()));
 
-  // Example API routes
+  // API routes
   app.get("/api/ping", (_req, res) => {
     const ping = process.env.PING_MESSAGE ?? "ping";
     res.json({ message: ping });
   });
   app.get("/api/demo", handleDemo);
 
-  // Quotes (server-authoritative pricing)
+  // Quotes 
   app.get("/api/services", listServices);
   app.post("/api/quotes", createQuote);
   app.get("/api/quotes/:quoteId", getQuote);
@@ -133,8 +126,7 @@ export function createServer() {
   // Payments
   app.use("/api/payments", paymentsRouter);
 
-  // Admin — not linked from any public page or nav. Reachable only by
-  // someone who knows the URL, gated by requireAdmin on every route but login.
+  // Admin
   app.post("/api/admin/login", adminLogin);
   app.post("/api/admin/logout", adminLogout);
   app.get("/api/admin/session", adminCheckSession);
