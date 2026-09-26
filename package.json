@@ -1,5 +1,8 @@
 {
   "name": "almark-tech",
+  "engines": {
+    "node": "22.x"
+  },
   "private": true,
   "type": "module",
   "pkg": {
