@@ -171,6 +171,12 @@ export default function Index() {
         "Social media management, SEO for local businesses, content writing and blogging",
     },
     {
+      icon: <BarChart3 className="h-8 w-8" />,
+      title: "AI-Assisted Marketing Management",
+      description:
+        "AI content planning, drafting, and multi-platform scheduling with human brand & compliance review",
+    },
+    {
       icon: <Palette className="h-8 w-8" />,
       title: "Graphic Design",
       description:
