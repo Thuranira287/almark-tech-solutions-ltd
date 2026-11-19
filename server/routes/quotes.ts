@@ -1,9 +1,14 @@
 import { RequestHandler } from "express";
+import crypto from "crypto";
 import { prisma } from "../db";
 import { createQuoteSchema, formatZodError } from "../lib/validation";
 
-function generateQuoteRef() {
-  return `ALM-${Date.now()}-${Math.random().toString(36).slice(2, 6).toUpperCase()}`;
+// Cryptographically random, not guessable from timestamp+Math.random() the
+// way the previous ALM-<timestamp>-<4 base36 chars> format was. Existing
+// quote references already issued are untouched — this only changes what
+// new ones look like going forward.
+export function generateQuoteRef() {
+  return `ALM-${crypto.randomBytes(8).toString("hex").toUpperCase()}`;
 }
 
 export const createQuote: RequestHandler = async (req, res) => {
@@ -62,13 +67,23 @@ export const createQuote: RequestHandler = async (req, res) => {
   }
 };
 
+// Public, but gated on knowing the customer's email as well as the quote
+// ID — a quote reference alone (even with high entropy) shouldn't be
+// sufficient to pull someone's quote status/balance. Returns the same
+// generic "not found" whether the ID is wrong or the email doesn't match,
+// so this can't be used to confirm a guessed quote ID is real.
 export const getQuote: RequestHandler = async (req, res) => {
   try {
+    const email = typeof req.query.email === "string" ? req.query.email.trim().toLowerCase() : "";
+    if (!email) {
+      return res.status(400).json({ success: false, message: "email is required" });
+    }
+
     const quote = await prisma.quote.findUnique({
       where: { quoteRef: req.params.quoteId },
       include: { services: { include: { service: true } }, payments: true },
     });
-    if (!quote) {
+    if (!quote || quote.customerEmail.toLowerCase() !== email) {
       return res.status(404).json({ success: false, message: "Quote not found" });
     }
     res.json({

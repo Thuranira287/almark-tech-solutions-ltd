@@ -21,6 +21,11 @@ export const mpesaInitiateSchema = z.object({
   quoteId: z.string().min(1),
 });
 
+export const mpesaManualSchema = z.object({
+  amount: z.number().positive(),
+  quoteId: z.string().min(1),
+});
+
 export const paypalCreateSchema = z.object({
   amount: z.number().positive(), 
   quoteId: z.string().min(1),

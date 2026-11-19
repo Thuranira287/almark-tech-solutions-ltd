@@ -137,7 +137,14 @@ class PaymentService {
     }
   }
 
-  // M-Pesa specific methods
+  // M-Pesa specific methods. Returns the real result — never a fabricated
+  // success. A previous version of this method returned success:true with
+  // manual payment instructions whenever the STK push API call itself
+  // failed (network error, 404, 500), which meant the customer saw a
+  // cheerful "payment initiated" while no Payment row existed anywhere and
+  // no money had moved. If STK push genuinely fails, call
+  // registerManualMpesaPayment() below instead — that creates a real,
+  // admin-confirmable pending payment rather than pretending.
   async initiateMpesaPayment(phoneNumber: string, amount: number, quoteId: string, customerInfo: any): Promise<PaymentResponse> {
     try {
       const response = await fetch(`${this.baseUrl}/mpesa/initiate`, {
@@ -153,69 +160,57 @@ class PaymentService {
         })
       });
 
-      // Read the response body once as text
       const responseText = await response.text();
 
       if (!response.ok) {
         console.error('M-Pesa API Error Response:', responseText);
-
-        // If API is not available, provide manual instructions
-        if (response.status === 404 || response.status === 500) {
-          return {
-            success: true,
-            message: 'M-Pesa API temporarily unavailable. Please use manual payment.',
-            data: {
-              fallbackMode: true,
-              instructions: [
-                'Go to M-Pesa menu on your phone',
-                'Select "Send Money"',
-                'Enter: 0716227616',
-                `Amount: KES ${amount.toLocaleString()}`,
-                `Reference: ${quoteId}`,
-                'Complete the payment',
-                'Send the M-Pesa confirmation message to +254716227616'
-              ]
-            }
-          };
+        let message = `HTTP ${response.status}: ${responseText || 'Request failed'}`;
+        try {
+          const parsed = JSON.parse(responseText);
+          if (parsed?.message) message = parsed.message;
+        } catch {
+          // responseText wasn't JSON — keep the raw message above
         }
-
-        throw new Error(`HTTP ${response.status}: ${responseText || 'Request failed'}`);
+        return { success: false, message };
       }
 
-      // Parse the text as JSON
       try {
-        const data = JSON.parse(responseText);
-        return data;
+        return JSON.parse(responseText);
       } catch (parseError) {
         console.error('M-Pesa response parse error:', parseError, 'Response:', responseText);
-        throw new Error(`Invalid JSON response from M-Pesa API: ${responseText}`);
+        return { success: false, message: 'Received an invalid response from the M-Pesa API' };
       }
     } catch (error) {
       console.error('M-Pesa payment error:', error);
-
-      // Provide fallback manual instructions for network errors
-      if (error instanceof TypeError && (error.message.includes('fetch') || error.message.includes('Failed to fetch'))) {
-        return {
-          success: true,
-          message: 'Using manual M-Pesa payment method.',
-          data: {
-            fallbackMode: true,
-            instructions: [
-              'Go to M-Pesa menu on your phone',
-              'Select "Send Money"',
-              'Enter: 0716227616',
-              `Amount: KES ${amount.toLocaleString()}`,
-              `Reference: ${quoteId}`,
-              'Complete the payment',
-              'Send the M-Pesa confirmation message to +254716227616'
-            ]
-          }
-        };
-      }
-
       return {
         success: false,
         message: error instanceof Error ? error.message : 'Failed to initiate M-Pesa payment. Please try again.'
+      };
+    }
+  }
+
+  // Registers a real, server-recorded manual M-Pesa payment (Paybill) when
+  // STK push isn't available. This does not claim the payment is complete
+  // — it's pending until an admin confirms the money actually arrived, at
+  // which point (and only then) the receipt email is sent.
+  async registerManualMpesaPayment(amount: number, quoteId: string): Promise<PaymentResponse> {
+    try {
+      const response = await fetch(`${this.baseUrl}/mpesa/manual`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, quoteId }),
+      });
+      const responseText = await response.text();
+      if (!response.ok) {
+        console.error('Manual M-Pesa registration error:', responseText);
+        throw new Error(`HTTP ${response.status}: ${responseText || 'Request failed'}`);
+      }
+      return JSON.parse(responseText);
+    } catch (error) {
+      console.error('Manual M-Pesa registration error:', error);
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Failed to register manual payment. Please try again.'
       };
     }
   }

@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Lock, RefreshCw, LogOut, Users, MessageSquare } from 'lucide-react';
+import { Lock, RefreshCw, LogOut, Users, MessageSquare, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import AdminUsersPanel from '@/components/admin/AdminUsersPanel';
 import TestimonialsPanel from '@/components/admin/TestimonialsPanel';
+import MarketingPanel from '@/components/admin/MarketingPanel';
 import SEO from '@/components/SEO';
 
 interface QuoteRow {
@@ -20,7 +21,7 @@ interface QuoteRow {
   status: string;
   createdAt: string;
   services: { name: string; price: number }[];
-  payments: { method: string; amount: number; currency: string; status: string; providerRef: string | null; createdAt: string }[];
+  payments: { id: string; method: string; amount: number; currency: string; status: string; providerRef: string | null; createdAt: string }[];
 }
 
 export default function Admin() {
@@ -37,8 +38,10 @@ export default function Admin() {
   const [loadingQuotes, setLoadingQuotes] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [updatingQuoteId, setUpdatingQuoteId] = useState<string | null>(null);
+  const [confirmingPaymentId, setConfirmingPaymentId] = useState<string | null>(null);
   const [showUsers, setShowUsers] = useState(false);
   const [showTestimonials, setShowTestimonials] = useState(false);
+  const [showMarketing, setShowMarketing] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -126,6 +129,52 @@ export default function Admin() {
     }
   }
 
+  async function confirmPayment(paymentId: string) {
+    if (!confirm('Confirm that this payment actually arrived? This sends the receipt email to the customer.')) return;
+    setConfirmingPaymentId(paymentId);
+    try {
+      const res = await fetch(`/api/admin/payments/${paymentId}/confirm`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || 'Failed to confirm payment');
+      await loadQuotes();
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to confirm payment');
+    } finally {
+      setConfirmingPaymentId(null);
+    }
+  }
+
+  async function resendReceipt(quoteId: string) {
+    try {
+      const res = await fetch('/api/admin/quotes/resend-receipt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify({ quoteId }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || 'Failed to resend receipt');
+      alert('Receipt resent.');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Failed to resend receipt');
+    }
+  }
+
+  async function registerC2BUrls() {
+    if (!confirm('Tell Safaricom where to send automatic Paybill payment notifications? Run this once after setting the MPESA_C2B_* env vars, or again if those URLs change.')) return;
+    try {
+      const res = await fetch('/api/admin/payments/mpesa/register-c2b', { method: 'POST', credentials: 'include' });
+      const json = await res.json();
+      if (!res.ok || !json.success) throw new Error(json.message || 'Registration failed');
+      alert('Registered. Manual M-Pesa (Paybill) payments will now be confirmed automatically.');
+    } catch (err) {
+      alert(err instanceof Error ? err.message : 'Registration failed');
+    }
+  }
+
   if (checkingSession) {
     return <div className="min-h-screen flex items-center justify-center text-gray-500">Loading…</div>;
   }
@@ -194,8 +243,15 @@ export default function Admin() {
           <div>
             <h1 className="text-2xl font-bold text-brand-dark">Quotes & Payments</h1>
             <p className="text-xs text-gray-500">Signed in as {currentEmail}</p>
+            <button onClick={registerC2BUrls} className="text-xs text-gray-400 hover:text-brand-gold-dark hover:underline mt-1">
+              One-time setup: enable automatic M-Pesa Paybill confirmation
+            </button>
           </div>
           <div className="flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => setShowMarketing((v) => !v)}>
+              <Sparkles className="h-4 w-4 mr-2" />
+              {showMarketing ? 'Hide marketing' : 'AI Marketing'}
+            </Button>
             <Button variant="outline" size="sm" onClick={() => setShowTestimonials((v) => !v)}>
               <MessageSquare className="h-4 w-4 mr-2" />
               {showTestimonials ? 'Hide reviews' : 'Reviews'}
@@ -214,6 +270,12 @@ export default function Admin() {
             </Button>
           </div>
         </div>
+
+        {showMarketing && (
+          <div className="mb-6">
+            <MarketingPanel />
+          </div>
+        )}
 
         {showTestimonials && (
           <div className="mb-6">
@@ -280,6 +342,15 @@ export default function Admin() {
                   <div><span className="text-gray-500">Balance:</span> <span className="font-semibold text-orange-600">KES {q.balance.toLocaleString()}</span></div>
                 </div>
 
+                {q.payments.some((p) => p.status === 'completed') && (
+                  <button
+                    onClick={() => resendReceipt(q.quoteId)}
+                    className="text-xs text-brand-gold-dark hover:underline mb-2"
+                  >
+                    Resend receipt
+                  </button>
+                )}
+
                 <details className="text-sm">
                   <summary className="cursor-pointer text-brand-gold-dark">Services & payment history</summary>
                   <div className="mt-2 grid sm:grid-cols-2 gap-4">
@@ -293,11 +364,22 @@ export default function Admin() {
                     </div>
                     <div>
                       <p className="font-semibold text-gray-700 mb-1">Payments</p>
-                      <ul className="text-gray-600 space-y-1">
+                      <ul className="text-gray-600 space-y-2">
                         {q.payments.length === 0 && <li className="text-gray-400">None yet</li>}
-                        {q.payments.map((p, i) => (
-                          <li key={i}>
-                            {p.method} — {p.currency} {p.amount.toLocaleString()} — {p.status}
+                        {q.payments.map((p) => (
+                          <li key={p.id} className="flex items-center justify-between gap-2">
+                            <span>
+                              {p.method}{p.providerRef?.startsWith('manual-') ? ' (manual)' : ''} — {p.currency} {p.amount.toLocaleString()} — {p.status}
+                            </span>
+                            {p.status === 'pending' && (
+                              <button
+                                onClick={() => confirmPayment(p.id)}
+                                disabled={confirmingPaymentId === p.id}
+                                className="text-xs text-green-600 hover:text-green-800 font-semibold whitespace-nowrap"
+                              >
+                                {confirmingPaymentId === p.id ? 'Confirming…' : 'Confirm received'}
+                              </button>
+                            )}
                           </li>
                         ))}
                       </ul>

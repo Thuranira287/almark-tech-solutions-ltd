@@ -228,6 +228,16 @@ export const quoteServices: Service[] = [
     basePrice: 20000,
     priceRange: "KES 20,000 - 50,000",
   },
+  {
+    id: "ai-marketing",
+    category: "Business & Digital",
+    name: "AI-Assisted Marketing Management",
+    description:
+      "Content planning, drafting, and scheduling for your business social accounts, with every post reviewed against brand and claim rules before it goes out (Monthly)",
+    icon: <BarChart3 className="h-5 w-5" />,
+    basePrice: 30000,
+    priceRange: "KES 30,000/month",
+  },
 
   // Online Cyber Services
   {

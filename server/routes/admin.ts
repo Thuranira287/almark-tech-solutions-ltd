@@ -3,6 +3,7 @@ import { z } from "zod";
 import rateLimit from "express-rate-limit";
 import { prisma } from "../db";
 import { logger } from "../lib/logger";
+import { markPaymentCompleted } from "../lib/paymentGuard";
 import {
   verifyPassword,
   hashPassword,
@@ -91,6 +92,7 @@ export const adminListQuotes: RequestHandler = [requireAdmin, async (req, res) =
         createdAt: q.createdAt,
         services: q.services.map((s) => ({ name: s.service.name, price: s.priceAtQuote })),
         payments: q.payments.map((p) => ({
+          id: p.id,
           method: p.method,
           amount: p.amount,
           currency: p.currency,
@@ -136,6 +138,33 @@ export const adminUpdateQuoteStatus: RequestHandler = [requireAdmin, async (req,
   }
 }] as any;
 
+// Confirms a specific pending payment — primarily the manual M-Pesa path
+// (Paybill, no automatic callback), but works for any pending payment an
+// admin has independently verified arrived. Goes through the same
+// markPaymentCompleted every automatic callback/webhook uses, so it's the
+// one and only place a payment ever gets marked complete, and the receipt
+// email fires from exactly the same code path either way.
+export const adminConfirmPayment: RequestHandler = [requireAdmin, async (req, res) => {
+  try {
+    const payment = await prisma.payment.findUnique({ where: { id: req.params.paymentId } });
+    if (!payment) {
+      return res.status(404).json({ success: false, message: "Payment not found" });
+    }
+    if (payment.status !== "pending") {
+      return res.status(400).json({ success: false, message: `Payment is already "${payment.status}", not pending` });
+    }
+    const updated = await markPaymentCompleted(payment.providerRef!);
+    if (!updated) {
+      return res.status(500).json({ success: false, message: "Failed to confirm payment" });
+    }
+    logger.debug(`Admin confirmed payment ${updated.id} (${updated.providerRef})`);
+    res.json({ success: true, data: { paymentId: updated.id, status: updated.status } });
+  } catch (error) {
+    console.error("adminConfirmPayment error:", error);
+    res.status(500).json({ success: false, message: "Failed to confirm payment" });
+  }
+}] as any;
+
 // --- Admin user management (per-person accounts) ---
 // Only reachable by an already-authenticated admin — bootstrapping the
 // first account is done via `npm run admin:create` (see scripts/create-admin.ts),
@@ -166,6 +195,9 @@ export const adminListUsers: RequestHandler = [requireAdmin, async (_req, res) =
 const createUserSchema = z.object({
   email: z.string().email(),
   password: z.string().min(10, "Password must be at least 10 characters"),
+  // Defaults to false — a new admin only gets cross-tenant platform
+  // access if an existing platform admin explicitly grants it here.
+  isPlatformAdmin: z.boolean().optional().default(false),
 });
 
 export const adminCreateUser: RequestHandler = [requireAdmin, async (req, res) => {
@@ -180,8 +212,10 @@ export const adminCreateUser: RequestHandler = [requireAdmin, async (req, res) =
       return res.status(409).json({ success: false, message: "An admin with that email already exists" });
     }
     const passwordHash = await hashPassword(parsed.data.password);
-    const user = await prisma.adminUser.create({ data: { email, passwordHash } });
-    res.json({ success: true, data: { id: user.id, email: user.email } });
+    const user = await prisma.adminUser.create({
+      data: { email, passwordHash, isPlatformAdmin: parsed.data.isPlatformAdmin },
+    });
+    res.json({ success: true, data: { id: user.id, email: user.email, isPlatformAdmin: user.isPlatformAdmin } });
   } catch (error) {
     console.error("adminCreateUser error:", error);
     res.status(500).json({ success: false, message: "Failed to create admin user" });

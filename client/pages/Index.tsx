@@ -309,41 +309,52 @@ export default function Index() {
               <div className="relative">
                 <div className="absolute -inset-4 bg-gradient-to-r from-brand-gold to-brand-tech-blue rounded-lg blur opacity-20" />
 
-                <div className="relative bg-white rounded-lg p-8 shadow-2xl">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="text-center p-4 bg-brand-gold/10 rounded-lg">
-                      <Globe className="h-8 w-8 text-brand-gold mx-auto mb-2" />
-                      <p className="text-brand-dark font-semibold">
-                        Web Development
-                      </p>
-                    </div>
+                <div className="relative group">
+                  <div className="relative group">
+                    {/* Brand-matched gold & tech-blue glow */}
+                    <div
+                      aria-hidden="true"
+                      className="absolute -inset-1.5 rounded-xl bg-gradient-to-tr from-brand-gold/80 via-brand-gold/50 to-brand-tech-blue/70 opacity-75 blur-xl transition duration-500 group-hover:opacity-100"
+                    />
 
-                    <div className="text-center p-4 bg-brand-tech-blue/10 rounded-lg">
-                      <Smartphone className="h-8 w-8 text-brand-tech-blue mx-auto mb-2" />
-                      <p className="text-brand-dark font-semibold">
-                        Mobile Apps
-                      </p>
-                    </div>
+                    {/* Main white card */}
+                    <div className="relative bg-white rounded-lg p-8 shadow-2xl ring-1 ring-brand-gold/30">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="text-center p-4 bg-brand-gold/10 rounded-lg">
+                          <Globe className="h-8 w-8 text-brand-gold mx-auto mb-2" />
+                          <p className="text-brand-dark font-semibold">
+                            Web Development
+                          </p>
+                        </div>
 
-                    <div className="text-center p-4 bg-brand-tech-green/10 rounded-lg">
-                      <Shield className="h-8 w-8 text-brand-tech-green mx-auto mb-2" />
-                      <p className="text-brand-dark font-semibold">
-                        Cybersecurity
-                      </p>
-                    </div>
+                        <div className="text-center p-4 bg-brand-tech-blue/10 rounded-lg">
+                          <Smartphone className="h-8 w-8 text-brand-tech-blue mx-auto mb-2" />
+                          <p className="text-brand-dark font-semibold">
+                            Mobile Apps
+                          </p>
+                        </div>
 
-                    <div className="text-center p-4 bg-purple-100 rounded-lg">
-                      <GraduationCap className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                      <p className="text-brand-dark font-semibold">
-                        Training
-                      </p>
+                        <div className="text-center p-4 bg-brand-tech-green/10 rounded-lg">
+                          <Shield className="h-8 w-8 text-brand-tech-green mx-auto mb-2" />
+                          <p className="text-brand-dark font-semibold">
+                            Cybersecurity
+                          </p>
+                        </div>
+
+                        <div className="text-center p-4 bg-purple-100 rounded-lg">
+                          <GraduationCap className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                          <p className="text-brand-dark font-semibold">
+                            Training
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
               </div>
             </div>
           </div>
         </div>
+      </div>
       </section>
 
       <section

@@ -273,7 +273,7 @@ export const createPayPalPayment: RequestHandler = async (req, res) => {
     console.error('PayPal payment creation error:', error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to create PayPal payment'
+      message: 'Failed to create PayPal payment'
     });
   }
 };
@@ -319,7 +319,7 @@ export const capturePayPalPayment: RequestHandler = async (req, res) => {
     console.error('PayPal payment capture error:', error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to capture PayPal payment'
+      message: 'Failed to capture PayPal payment'
     });
   }
 };
@@ -347,7 +347,7 @@ export const getPayPalPaymentDetails: RequestHandler = async (req, res) => {
     console.error('PayPal get payment details error:', error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : 'Failed to get PayPal payment details'
+      message: 'Failed to get PayPal payment details'
     });
   }
 };

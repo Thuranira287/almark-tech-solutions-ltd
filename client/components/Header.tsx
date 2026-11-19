@@ -64,10 +64,10 @@ export default function Header() {
           </nav>
 
           <div className="hidden lg:flex items-center space-x-4">
-            <div className="flex items-center space-x-2 text-sm text-brand-dark">
+           {/* <div className="flex items-center space-x-2 text-sm text-brand-dark">
               <Phone className="h-4 w-4" />
               <span>+254716227616</span>
-            </div>
+            </div>*/}
             <a
               href="https://wa.me/254716227616?text=Hello%20Almark%20Tech%20Solutions,%20I'm%20interested%20in%20your%20services"
               target="_blank"

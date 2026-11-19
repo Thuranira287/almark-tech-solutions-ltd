@@ -1,14 +1,17 @@
 import { RequestHandler } from "express";
 import fetch from "node-fetch";
-import { mpesaInitiateSchema, formatZodError } from "../../lib/validation";
+import { mpesaInitiateSchema, mpesaManualSchema, formatZodError } from "../../lib/validation";
 import { logger } from "../../lib/logger";
 import {
   assertQuoteAndAmount,
   recordPendingPayment,
+  recordManualPayment,
   markPaymentCompleted,
   markPaymentFailed,
+  verifyAndCompleteStkPayment,
   PaymentValidationError,
 } from "../../lib/paymentGuard";
+import { timingSafeEqual } from "../../lib/timingSafe";
 
 // ---- Interfaces ----
 export interface MpesaPaymentRequest {
@@ -225,6 +228,42 @@ class MpesaService {
 
     return data;
   }
+
+  // Registers where Safaricom should send C2B (Paybill) payment
+  // notifications. A one-time (or infrequent) setup call, not something
+  // that runs per-request — see registerC2BUrlsHandler below, which an
+  // admin triggers manually after deploying. Safaricom blocks any
+  // callback URL containing "mpesa"/"m-pesa"/"safaricom", so these must be
+  // neutral paths (/api/payments/c2b/...), unlike the existing STK
+  // callback path, which predates this and is left alone here.
+  async registerC2BUrls(): Promise<{ ResponseCode: string; ResponseDescription: string }> {
+    const accessToken = await this.getAccessToken();
+    const confirmationURL = process.env.MPESA_C2B_CONFIRMATION_URL;
+    const validationURL = process.env.MPESA_C2B_VALIDATION_URL;
+    if (!confirmationURL) {
+      throw new Error("MPESA_C2B_CONFIRMATION_URL is not set");
+    }
+
+    const response = await fetch(`${this.baseUrl}/mpesa/c2b/v1/registerurl`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        ShortCode: mpesaConfig.businessShortCode,
+        ResponseType: "Completed",
+        ConfirmationURL: confirmationURL,
+        ValidationURL: validationURL || confirmationURL,
+      }),
+    });
+
+    const data = (await response.json()) as { errorMessage?: string; ResponseCode?: string; ResponseDescription?: string };
+    if (!response.ok) {
+      throw new Error(`C2B URL registration failed: ${data.errorMessage || JSON.stringify(data)}`);
+    }
+    return { ResponseCode: data.ResponseCode ?? "", ResponseDescription: data.ResponseDescription ?? "" };
+  }
 }
 
 const mpesaService = new MpesaService();
@@ -282,9 +321,7 @@ export const initiateMpesaPayment: RequestHandler = async (req, res) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error
-          ? error.message
-          : "Failed to initiate M-Pesa payment",
+        "Failed to initiate M-Pesa payment",
     });
   }
 };
@@ -312,9 +349,7 @@ export const queryMpesaPayment: RequestHandler = async (req, res) => {
     res.status(500).json({
       success: false,
       message:
-        error instanceof Error
-          ? error.message
-          : "Failed to query M-Pesa payment",
+        "Failed to query M-Pesa payment",
     });
   }
 };
@@ -323,9 +358,10 @@ export const queryMpesaPayment: RequestHandler = async (req, res) => {
 export const handleMpesaCallback: RequestHandler = async (req, res) => {
   try {
     const expectedSecret = process.env.MPESA_CALLBACK_SECRET;
-    if (expectedSecret && req.query.secret !== expectedSecret) {
+    const providedSecret = req.query.secret;
+    if (!expectedSecret || typeof providedSecret !== "string" || !timingSafeEqual(providedSecret, expectedSecret)) {
       console.warn("M-Pesa callback rejected: missing/invalid secret");
-      return res.status(403).json({ success: false });
+      return res.status(403).json({ ResultCode: 1, ResultDesc: "Rejected" });
     }
 
     logger.debug("M-Pesa Callback received:", JSON.stringify(req.body, null, 2));
@@ -343,9 +379,9 @@ export const handleMpesaCallback: RequestHandler = async (req, res) => {
         );
 
         const callbackMetadata = callback.CallbackMetadata?.Item || [];
+        const rawAmount = callbackMetadata.find((item: any) => item.Name === "Amount")?.Value;
         const paymentDetails = {
-          amount: callbackMetadata.find((item: any) => item.Name === "Amount")
-            ?.Value,
+          amount: rawAmount,
           mpesaReceiptNumber: callbackMetadata.find(
             (item: any) => item.Name === "MpesaReceiptNumber"
           )?.Value,
@@ -358,8 +394,21 @@ export const handleMpesaCallback: RequestHandler = async (req, res) => {
         };
 
         logger.debug("Payment details:", paymentDetails);
-        // Idempotent
-        await markPaymentCompleted(checkoutRequestId, { ...callback, paymentDetails });
+
+        // A valid secret only proves the request came through Safaricom's
+        // callback mechanism — it says nothing about which payment this is
+        // for or whether the amount is right. verifyAndCompleteStkPayment
+        // checks CheckoutRequestID match, quote/payment relationship,
+        // amount match, and not-already-completed before ever calling
+        // markPaymentCompleted.
+        const verification = await verifyAndCompleteStkPayment({
+          checkoutRequestId,
+          callbackAmount: typeof rawAmount === "number" ? rawAmount : parseFloat(rawAmount),
+          rawCallback: { ...callback, paymentDetails },
+        });
+        if (!verification.ok) {
+          logger.error(`[MPESA] STK callback verification failed for ${checkoutRequestId}: ${verification.reason}`);
+        }
       } else {
         logger.debug(
           `M-Pesa payment failed for CheckoutRequestID: ${checkoutRequestId}`,
@@ -373,5 +422,156 @@ export const handleMpesaCallback: RequestHandler = async (req, res) => {
   } catch (error) {
     console.error("M-Pesa callback error:", error);
     res.status(500).json({ success: false });
+  }
+};
+
+// Registers a real, auditable record of a manually-made M-Pesa payment
+// (e.g. the customer was given Paybill instructions because STK push
+// isn't available right now). This never claims the payment is complete
+// and never sends a receipt — it only exists so an admin can later
+// confirm the money actually arrived (POST
+// /api/admin/payments/:paymentId/confirm), which is the point at which
+// markPaymentCompleted actually fires the receipt email. Replaces a
+// previous client-side fallback that silently reported "success" whenever
+// the real STK push call failed, with no record created anywhere.
+export const registerManualMpesaPayment: RequestHandler = async (req, res) => {
+  try {
+    const parsed = mpesaManualSchema.safeParse(req.body);
+    if (!parsed.success) {
+      return res.status(400).json({ success: false, message: formatZodError(parsed.error) });
+    }
+    const { amount, quoteId } = parsed.data;
+
+    const { payment } = await recordManualPayment({ quoteRef: quoteId, amount, method: "mpesa" });
+
+    res.json({
+      success: true,
+      message: "Manual payment recorded — pending confirmation",
+      data: {
+        paymentId: payment.id,
+        instructions: {
+          paybillNumber: "0716227616",
+          accountName: "Almark Tech Solutions",
+          amount,
+          reference: quoteId,
+        },
+      },
+    });
+  } catch (error) {
+    if (error instanceof PaymentValidationError) {
+      return res.status(400).json({ success: false, message: error.message });
+    }
+    console.error("Manual M-Pesa registration error:", error);
+    res.status(500).json({ success: false, message: "Failed to record manual payment" });
+  }
+};
+
+function checkC2BSecret(req: Parameters<RequestHandler>[0]): boolean {
+  const expected = process.env.MPESA_C2B_SECRET;
+  const provided = req.query.secret;
+  return typeof provided === "string" && timingSafeEqual(provided, expected);
+}
+
+// Safaricom only calls this if "External Validation" has been specifically
+// enabled on the shortcode by Safaricom (disabled by default for most
+// Paybills). When it IS enabled, this is the one place we could reject a
+// payment before it's processed — here, that only happens for a
+// completely unrecognized BillRefNumber, since by the time this fires the
+// customer has already committed to sending money and the honest default
+// is to accept and reconcile at confirmation time.
+export const handleC2BValidation: RequestHandler = async (req, res) => {
+  if (!checkC2BSecret(req)) {
+    return res.status(403).json({ ResultCode: "C2B00016", ResultDesc: "Rejected" });
+  }
+  try {
+    const billRefNumber = String(req.body?.BillRefNumber || "").trim();
+    if (!billRefNumber) {
+      return res.json({ ResultCode: "C2B00012", ResultDesc: "Rejected" });
+    }
+    const { prisma } = await import("../../db");
+    const quote = await prisma.quote.findUnique({ where: { quoteRef: billRefNumber } });
+    if (!quote) {
+      logger.error(`[C2B] Validation: no quote found for BillRefNumber "${billRefNumber}"`);
+      return res.json({ ResultCode: "C2B00012", ResultDesc: "Rejected" });
+    }
+    res.json({ ResultCode: "0", ResultDesc: "Accepted" });
+  } catch (error) {
+    logger.error("[C2B] Validation error:", error);
+    // Fail open rather than blocking a real payment on our own error.
+    res.json({ ResultCode: "0", ResultDesc: "Accepted" });
+  }
+};
+
+// The real automation: Safaricom calls this once money has actually
+// landed in the Paybill, for every C2B payment — including the manual
+// Paybill payments this subsystem's "manual M-Pesa" instructions ask
+// customers to make. No admin action required for the normal case. This
+// is always acknowledged with ResultCode 0 (per Daraja's requirement —
+// confirmations can't be rejected, the money has already moved); matching
+// failures are logged loudly for manual admin follow-up instead.
+export const handleC2BConfirmation: RequestHandler = async (req, res) => {
+  if (!checkC2BSecret(req)) {
+    return res.status(403).json({ ResultCode: "C2B00016", ResultDesc: "Rejected" });
+  }
+
+  const ack = () => res.json({ ResultCode: "0", ResultDesc: "Success" });
+
+  try {
+    const body = req.body || {};
+    const transId = String(body.TransID || "");
+    const billRefNumber = String(body.BillRefNumber || "").trim();
+    const transAmount = parseFloat(body.TransAmount);
+
+    if (!transId || !billRefNumber || Number.isNaN(transAmount)) {
+      logger.error("[C2B] Confirmation payload missing required fields:", JSON.stringify(body));
+      return ack();
+    }
+
+    const { prisma } = await import("../../db");
+    const quote = await prisma.quote.findUnique({ where: { quoteRef: billRefNumber } });
+    if (!quote) {
+      // Real money arrived that we can't match to a quote — this needs a
+      // human to reconcile manually, but Safaricom still gets a clean ack
+      // so it doesn't retry indefinitely.
+      logger.error(`[C2B] Unmatched payment: TransID=${transId} amount=${transAmount} BillRefNumber="${billRefNumber}" — needs manual reconciliation`);
+      return ack();
+    }
+
+    try {
+      await recordPendingPayment({
+        quoteId: quote.id,
+        method: "mpesa",
+        amount: transAmount,
+        currency: "KES",
+        providerRef: transId,
+      });
+    } catch (error) {
+      // providerRef is unique — a create failure here almost certainly
+      // means Safaricom retried a confirmation we already processed.
+      logger.debug(`[C2B] TransID ${transId} already recorded — treating as idempotent repeat`);
+      return ack();
+    }
+
+    await markPaymentCompleted(transId, body);
+    logger.debug(`[C2B] Confirmed manual M-Pesa payment for quote ${billRefNumber}: KES ${transAmount} (TransID ${transId})`);
+    return ack();
+  } catch (error) {
+    logger.error("[C2B] Confirmation handler error:", error);
+    // Still ack — Safaricom retrying won't fix an internal error, and
+    // failing to ack risks it hammering this endpoint.
+    return ack();
+  }
+};
+
+// Admin-triggered, not customer-facing: run once after deploying (and
+// again any time the C2B URLs change) to tell Safaricom where to send
+// Paybill payment notifications. See routes/admin.ts.
+export const registerC2BUrlsHandler: RequestHandler = async (_req, res) => {
+  try {
+    const result = await mpesaService.registerC2BUrls();
+    res.json({ success: true, data: result });
+  } catch (error) {
+    console.error("C2B URL registration error:", error);
+    res.status(500).json({ success: false, message: "Registration failed" });
   }
 };

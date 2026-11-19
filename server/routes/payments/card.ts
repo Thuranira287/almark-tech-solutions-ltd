@@ -69,7 +69,7 @@ export const createCardCheckoutSession: RequestHandler = async (req, res) => {
     console.error("Stripe checkout session error:", error);
     res.status(500).json({
       success: false,
-      message: error instanceof Error ? error.message : "Failed to start card payment",
+      message: "Failed to start card payment",
     });
   }
 };

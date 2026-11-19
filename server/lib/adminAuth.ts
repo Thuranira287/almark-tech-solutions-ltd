@@ -1,7 +1,8 @@
-import { RequestHandler } from "express";
+import { Request, RequestHandler } from "express";
 import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { authenticator } from "otplib";
+import { TenantRoleValue, roleAtLeast } from "./tenancy";
 
 const COOKIE_NAME = "almark_admin_session";
 const SESSION_TTL_MS = 12 * 60 * 60 * 1000; // 12 hours
@@ -109,25 +110,100 @@ export function checkIpAllowlist(ip: string | undefined): boolean {
   return allowlist.some((entry) => ipMatchesEntry(normalized, entry));
 }
 
-export const requireAdmin: RequestHandler = (req, res, next) => {
-  if (!checkIpAllowlist(req.ip)) {
-    console.warn(`Admin access blocked — IP ${req.ip} not in ADMIN_IP_ALLOWLIST`);
-    return res.status(403).json({ success: false, message: "Not authorized from this network" });
-  }
-
+function readSession(req: Request): { uid: string } | null {
   const cookieHeader = req.headers.cookie || "";
   const match = cookieHeader
     .split(";")
     .map((c) => c.trim())
     .find((c) => c.startsWith(`${COOKIE_NAME}=`));
   const value = match ? decodeURIComponent(match.split("=").slice(1).join("=")) : undefined;
+  return verifySessionCookieValue(value);
+}
 
-  const session = verifySessionCookieValue(value);
+export interface SessionUser {
+  id: string;
+  email: string;
+  isPlatformAdmin: boolean;
+}
+
+export function getSessionUser(req: Request): SessionUser {
+  return (req as any).adminUser as SessionUser;
+}
+
+export const requireSession: RequestHandler = async (req, res, next) => {
+  if (!checkIpAllowlist(req.ip)) {
+    console.warn(`Admin access blocked — IP ${req.ip} not in ADMIN_IP_ALLOWLIST`);
+    return res.status(403).json({ success: false, message: "Not authorized from this network" });
+  }
+  const session = readSession(req);
   if (!session) {
     return res.status(401).json({ success: false, message: "Not authenticated" });
   }
-  (req as any).adminUserId = session.uid;
-  next();
+  try {
+    const { prisma } = await import("../db");
+    const user = await prisma.adminUser.findUnique({
+      where: { id: session.uid },
+      select: { id: true, email: true, isPlatformAdmin: true },
+    });
+    if (!user) {
+      return res.status(401).json({ success: false, message: "Not authenticated" });
+    }
+    (req as any).adminUserId = user.id;
+    (req as any).adminUser = user;
+    next();
+  } catch (error) {
+    console.error("requireSession error:", error);
+    res.status(500).json({ success: false, message: "Authentication check failed" });
+  }
 };
+
+export const requireAdmin: RequestHandler = (req, res, next) => {
+  requireSession(req, res, () => {
+    if (!getSessionUser(req).isPlatformAdmin) {
+      return res.status(403).json({ success: false, message: "Platform administrator access required" });
+    }
+    next();
+  });
+};
+
+export function requireTenantRole(minimum: TenantRoleValue): RequestHandler {
+  return (req, res, next) => {
+    requireSession(req, res, async () => {
+      const tenantId = req.params.tenantId;
+      const user = getSessionUser(req);
+      try {
+        const { prisma } = await import("../db");
+        const tenant = await prisma.tenant.findUnique({ where: { id: tenantId }, select: { id: true, status: true } });
+        if (!tenant) {
+          return res.status(404).json({ success: false, message: "Tenant not found" });
+        }
+        if (user.isPlatformAdmin) {
+          (req as any).tenantRole = "owner";
+          (req as any).tenant = tenant;
+          return next();
+        }
+        const membership = await prisma.tenantMember.findUnique({
+          where: { tenantId_adminUserId: { tenantId, adminUserId: user.id } },
+          select: { role: true },
+        });
+        if (!membership) {
+          return res.status(404).json({ success: false, message: "Tenant not found" });
+        }
+        if (tenant.status !== "active") {
+          return res.status(403).json({ success: false, message: "This tenant is suspended" });
+        }
+        if (!roleAtLeast(membership.role, minimum)) {
+          return res.status(403).json({ success: false, message: `Requires ${minimum} role or higher` });
+        }
+        (req as any).tenantRole = membership.role;
+        (req as any).tenant = tenant;
+        next();
+      } catch (error) {
+        console.error("requireTenantRole error:", error);
+        res.status(500).json({ success: false, message: "Authorization check failed" });
+      }
+    });
+  };
+}
 
 export { COOKIE_NAME };

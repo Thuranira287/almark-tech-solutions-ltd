@@ -22,6 +22,7 @@ export const portfolioProjects: PortfolioProject[] = [
     tagline: "AI tutorials & web development guides",
     description:
       "A content platform publishing tutorials and guides on AI, web development, and technology trends.",
+    image:"/portfolio/techblogs-ai.jpg",
     url: "https://aitechblogs.netlify.app",
     category: "Web Platform",
   },

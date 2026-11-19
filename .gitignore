@@ -3,6 +3,11 @@
 .env.*
 !.env.example
 
+# Documentation 
+*.md
+*.MD
+
+
 # Server environment files
 server/.env
 server/.env.*

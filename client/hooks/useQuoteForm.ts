@@ -101,154 +101,156 @@ export function useQuoteForm() {
       }
       const quoteId: string = quoteCreateResult.data.quoteId;
 
-      // Send quote receipt email — the server rebuilds the receipt from the
-      // quote record it just stored, not from this request body.
-      const response = await fetch("/api/send-quote-receipt", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ quoteId, paymentMethod, paymentAmount }),
-      });
+      // No receipt is sent here. A receipt is only ever emailed once a
+      // payment is actually confirmed — see server/lib/paymentGuard.ts's
+      // markPaymentCompleted, which every payment method below eventually
+      // reaches (the M-Pesa callback, the PayPal capture/webhook, the
+      // Stripe webhook, or an admin manually confirming a pending manual
+      // payment). Sending it here, before any payment was attempted, was
+      // the bug: customers who never paid were still getting a receipt.
+      let paymentResult = null;
+      let paymentSuccessMessage = "";
+      let paymentConfirmedOrPending = false;
 
-      const result = await response.json();
-
-      if (result.success) {
-        // Process payment if amount > 0
-        let paymentResult = null;
-        let paymentSuccessMessage = "";
-
-        if (paymentAmount > 0) {
-          try {
-            if (paymentMethod === "mpesa") {
-              const phoneNumber = customerInfo.phone || prompt("Please enter your M-Pesa phone number (e.g., 0712345678):");
-              if (phoneNumber) {
-                console.log('Initiating M-Pesa payment:', { phoneNumber, paymentAmount, quoteId });
-                paymentResult = await paymentService.initiateMpesaPayment(
-                  phoneNumber,
-                  paymentAmount,
-                  quoteId,
-                  customerInfo
-                );
-
-                console.log('M-Pesa payment result:', paymentResult);
-
-                if (paymentResult.success) {
-                  if (paymentResult.data?.fallbackMode) {
-                    paymentSuccessMessage = "\nPlease complete M-Pesa payment manually:\n" +
-                      "1. Go to M-Pesa menu\n" +
-                      "2. Select 'Send Money'\n" +
-                      "3. Enter: 0716227616\n" +
-                      `4. Amount: KES ${paymentAmount.toLocaleString()}\n` +
-                      `5. Reference: ${quoteId}\n` +
-                      "6. Send confirmation SMS to +254716227616";
-                  } else {
-                    paymentSuccessMessage = "\nM-Pesa payment initiated. Check your phone for the payment prompt.";
-                  }
-                } else {
-                  paymentSuccessMessage = `\n M-Pesa payment failed: ${paymentResult.message}`;
-                }
-              } else {
-                paymentSuccessMessage = "\n M-Pesa payment cancelled - phone number required.";
-              }
-            } else if (paymentMethod === "paypal") {
-              console.log('Initiating PayPal payment:', { paymentAmount, quoteId });
-
-              paymentResult = await paymentService.createPayPalPayment(
+      if (paymentAmount > 0) {
+        try {
+          if (paymentMethod === "mpesa") {
+            const phoneNumber = customerInfo.phone || prompt("Please enter your M-Pesa phone number (e.g., 0712345678):");
+            if (phoneNumber) {
+              console.log('Initiating M-Pesa payment:', { phoneNumber, paymentAmount, quoteId });
+              paymentResult = await paymentService.initiateMpesaPayment(
+                phoneNumber,
                 paymentAmount,
                 quoteId,
                 customerInfo
               );
 
-              console.log('PayPal payment result:', paymentResult);
+              console.log('M-Pesa payment result:', paymentResult);
 
-              if (paymentResult.success && paymentResult.data?.approvalUrl) {
-                paymentSuccessMessage = "\nRedirecting to PayPal for payment...";
-                setTimeout(() => {
-                  window.open(paymentResult.data.approvalUrl, '_blank');
-                }, 2000);
+              if (paymentResult.success) {
+                paymentSuccessMessage = "\nM-Pesa payment initiated. Check your phone for the payment prompt.";
+                paymentConfirmedOrPending = true;
               } else {
-                paymentSuccessMessage = `\n PayPal payment failed: ${paymentResult.message}`;
+                // The real STK push attempt failed — fall back to a real,
+                // admin-confirmable manual payment record instead of
+                // pretending the push succeeded.
+                const manualResult = await paymentService.registerManualMpesaPayment(paymentAmount, quoteId);
+                if (manualResult.success) {
+                  paymentSuccessMessage = "\nWe couldn't send an automatic M-Pesa prompt, so please pay manually:\n" +
+                    "1. Go to M-Pesa menu\n" +
+                    "2. Select 'Send Money'\n" +
+                    "3. Enter: 0716227616\n" +
+                    `4. Amount: KES ${paymentAmount.toLocaleString()}\n` +
+                    `5. Reference: ${quoteId}\n` +
+                    "6. Send the confirmation SMS to +254716227616\n" +
+                    "Your receipt will be emailed once we've confirmed the payment arrived.";
+                  paymentConfirmedOrPending = true;
+                } else {
+                  paymentSuccessMessage = `\nM-Pesa payment failed: ${manualResult.message || paymentResult.message}`;
+                }
               }
-            } else if (paymentMethod === "creditcard") {
-              console.log('Initiating card payment via Stripe Checkout:', { paymentAmount, quoteId });
-
-              paymentResult = await paymentService.createCardCheckoutSession(
-                paymentAmount,
-                quoteId,
-              );
-
-              console.log('Card payment result:', paymentResult);
-
-              if (paymentResult.success && paymentResult.data?.checkoutUrl) {
-                paymentSuccessMessage = "\nRedirecting you to our secure card payment page...";
-                setTimeout(() => {
-                  window.location.href = paymentResult.data.checkoutUrl;
-                }, 1500);
-              } else {
-                paymentSuccessMessage = `\n Card payment failed: ${paymentResult.message}`;
-              }
+            } else {
+              paymentSuccessMessage = "\nM-Pesa payment cancelled - phone number required.";
             }
-          } catch (error) {
-            console.error('Payment processing error:', error);
-            paymentSuccessMessage = "\n Payment processing encountered an issue. Please contact us for assistance.";
-          }
-        }
+          } else if (paymentMethod === "paypal") {
+            console.log('Initiating PayPal payment:', { paymentAmount, quoteId });
 
-        // Show success message with WhatsApp option
-        const paymentMessage =
+            paymentResult = await paymentService.createPayPalPayment(
+              paymentAmount,
+              quoteId,
+              customerInfo
+            );
+
+            console.log('PayPal payment result:', paymentResult);
+
+            if (paymentResult.success && paymentResult.data?.approvalUrl) {
+              paymentSuccessMessage = "\nRedirecting to PayPal for payment...";
+              paymentConfirmedOrPending = true;
+              setTimeout(() => {
+                window.open(paymentResult.data.approvalUrl, '_blank');
+              }, 2000);
+            } else {
+              paymentSuccessMessage = `\n PayPal payment failed: ${paymentResult.message}`;
+            }
+          } else if (paymentMethod === "creditcard") {
+            console.log('Initiating card payment via Stripe Checkout:', { paymentAmount, quoteId });
+
+            paymentResult = await paymentService.createCardCheckoutSession(
+              paymentAmount,
+              quoteId,
+            );
+
+            console.log('Card payment result:', paymentResult);
+
+            if (paymentResult.success && paymentResult.data?.checkoutUrl) {
+              paymentSuccessMessage = "\nRedirecting you to our secure card payment page...";
+              paymentConfirmedOrPending = true;
+              setTimeout(() => {
+                window.location.href = paymentResult.data.checkoutUrl;
+              }, 1500);
+            } else {
+              paymentSuccessMessage = `\n Card payment failed: ${paymentResult.message}`;
+            }
+          }
+        } catch (error) {
+          console.error('Payment processing error:', error);
+          paymentSuccessMessage = "\n Payment processing encountered an issue. Please contact us for assistance.";
+        }
+      }
+
+      // Show success message with WhatsApp option
+      const paymentMessage =
+        paymentAmount > 0
+          ? `Amount to Pay: KES ${paymentAmount.toLocaleString()}\n` +
+            `Balance Due: KES ${balance.toLocaleString()}\n`
+          : "";
+
+      const receiptNote = paymentConfirmedOrPending
+        ? `\nYou'll receive your receipt by email at ${customerInfo.email} once your payment is confirmed.\n`
+        : "";
+
+      const confirmed = confirm(
+        `Quote submitted successfully!\n\n` +
+          `Quote ID: ${quoteId}\n` +
+          `Total: KES ${totalPrice.toLocaleString()}\n` +
+          paymentMessage +
+          paymentSuccessMessage +
+          receiptNote +
+          `\nWe'll contact you within 24 hours.\n\n` +
+          `Would you like to continue the conversation on WhatsApp?`,
+      );
+
+      if (confirmed) {
+        const whatsappPaymentText =
           paymentAmount > 0
-            ? `Amount to Pay: KES ${paymentAmount.toLocaleString()}\n` +
-              `Balance Due: KES ${balance.toLocaleString()}\n`
+            ? `Amount Paid: KES ${paymentAmount.toLocaleString()}\nBalance Due: KES ${balance.toLocaleString()}\n\n`
             : "";
 
-        const confirmed = confirm(
-          `Quote submitted successfully!\n\n` +
+        const whatsappMessage = encodeURIComponent(
+          `Hello Almark Tech Solutions! I just submitted a quote request.\n\n` +
             `Quote ID: ${quoteId}\n` +
             `Total: KES ${totalPrice.toLocaleString()}\n` +
-            paymentMessage +
-            paymentSuccessMessage +
-            `\nReceipt sent to: ${customerInfo.email}\n\n` +
-            `We'll contact you within 24 hours.\n\n` +
-            `Would you like to continue the conversation on WhatsApp?`,
+            whatsappPaymentText +
+            `I'm interested in discussing the next steps.`,
         );
-
-        if (confirmed) {
-          const whatsappPaymentText =
-            paymentAmount > 0
-              ? `Amount Paid: KES ${paymentAmount.toLocaleString()}\nBalance Due: KES ${balance.toLocaleString()}\n\n`
-              : "";
-
-          const whatsappMessage = encodeURIComponent(
-            `Hello Almark Tech Solutions! I just submitted a quote request.\n\n` +
-              `Quote ID: ${quoteId}\n` +
-              `Total: KES ${totalPrice.toLocaleString()}\n` +
-              whatsappPaymentText +
-              `I'm interested in discussing the next steps.`,
-          );
-          window.open(
-            `https://wa.me/254716227616?text=${whatsappMessage}`,
-            "_blank",
-          );
-        }
-
-        // Reset form
-        setSelectedServices([]);
-        setCustomerInfo({
-          name: "",
-          email: "",
-          phone: "",
-          company: "",
-          message: "",
-        });
-        setPaymentMethod("");
-        setPaymentAmount(0);
-        setBalance(0);
-      } else {
-        alert(
-          "Error submitting quote. Please try again or contact us directly.",
+        window.open(
+          `https://wa.me/254716227616?text=${whatsappMessage}`,
+          "_blank",
         );
       }
+
+      // Reset form
+      setSelectedServices([]);
+      setCustomerInfo({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        message: "",
+      });
+      setPaymentMethod("");
+      setPaymentAmount(0);
+      setBalance(0);
     } catch (error) {
       console.error("Error submitting quote:", error);
       alert("Error submitting quote. Please try again or contact us directly.");

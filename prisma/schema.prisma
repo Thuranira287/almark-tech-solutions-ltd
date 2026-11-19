@@ -49,12 +49,15 @@ model Testimonial {
 }
 
 model AdminUser {
-  id           String    @id @default(cuid())
-  email        String    @unique
-  passwordHash String
-  totpSecret   String? 
-  createdAt    DateTime  @default(now())
-  lastLoginAt  DateTime?
+  id              String    @id @default(cuid())
+  email           String    @unique
+  passwordHash    String
+  totpSecret      String?
+  isPlatformAdmin Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  lastLoginAt     DateTime?
+
+  memberships TenantMember[]
 
   @@map("admin_users")
 }
@@ -123,4 +126,451 @@ model Payment {
   quote Quote @relation(fields: [quoteId], references: [id], onDelete: Cascade)
 
   @@map("payments")
+}
+
+// ============================================================
+// Almark AI Marketing — isolated subsystem.
+//
+// Does not touch Quote/Payment/AdminUser/Testimonial. Every model here is
+// additive. The AI never gets direct Prisma access to these tables — it
+// only ever sees output assembled by MarketingContextService
+// (server/lib/marketing/context.ts), which is an explicit allowlist, not a
+// blacklist. See server/lib/marketing/README.md for the full boundary.
+// ============================================================
+
+enum TenantStatus {
+  active
+  suspended
+}
+
+enum TenantRole {
+  viewer
+  editor
+  admin
+  owner
+}
+
+enum AutonomyMode {
+  AUTONOMOUS
+  APPROVAL
+  MANUAL
+}
+
+enum ContentType {
+  educational
+  service_promotion
+  portfolio
+  blog_promotion
+  company_update
+  engagement
+  lead_generation
+}
+
+enum MarketingPlatform {
+  facebook
+  instagram
+  linkedin
+  x
+  threads
+  tiktok
+  youtube
+  pinterest
+  bluesky
+  mastodon
+  google_business
+}
+
+enum SocialConnectionStatus {
+  connected
+  reauth_required
+  disconnected
+  error
+}
+
+enum ContentStatus {
+  draft
+  pending_approval
+  approved
+  rejected
+  scheduled
+  publishing
+  published
+  failed
+  cancelled
+}
+
+enum AutomationJobType {
+  publish_post
+  confirm_publication
+}
+
+enum AutomationJobStatus {
+  pending
+  running
+  succeeded
+  failed
+  cancelled
+}
+
+model Tenant {
+  id              String       @id @default(cuid())
+  name            String
+  slug            String       @unique
+  status          TenantStatus @default(active)
+  isPlatformOwner Boolean      @default(false)
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  members         TenantMember[]
+  settings        TenantMarketingSettings?
+  projects        MarketingProject[]
+  strategies      MarketingStrategy[]
+  campaigns       MarketingCampaign[]
+  content         MarketingContent[]
+  connections     SocialConnection[]
+  scheduledPosts  ScheduledPost[]
+  publishedPosts  PublishedPost[]
+  metrics         MarketingMetric[]
+  insights        MarketingInsight[]
+  media           MediaAsset[]
+  jobs            AutomationJob[]
+  actionLogs      AIActionLog[]
+
+  @@map("tenants")
+}
+
+model TenantMember {
+  id          String     @id @default(cuid())
+  tenantId    String
+  adminUserId String
+  role        TenantRole @default(viewer)
+  createdAt   DateTime   @default(now())
+
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@unique([tenantId, adminUserId])
+  @@map("tenant_members")
+}
+
+model PlatformMarketingSettings {
+  id                  Int       @id @default(1)
+  automationEnabled   Boolean   @default(false)
+  lastAutomationRunAt DateTime?
+  updatedAt           DateTime  @updatedAt
+
+  @@map("marketing_platform_settings")
+}
+
+model TenantMarketingSettings {
+  id                   String   @id @default(cuid())
+  tenantId             String   @unique
+  automationEnabled    Boolean  @default(false)
+  maxAiCostPerDayUsd   Float    @default(5)
+  maxAiCostPerMonthUsd Float    @default(50)
+  maxImageGensPerDay   Int      @default(10)
+  maxImageGensPerMonth Int      @default(150)
+  maxPostsPerDay       Int      @default(5)
+  maxPostsPerMonth     Int      @default(100)
+  updatedAt            DateTime @updatedAt
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@map("tenant_marketing_settings")
+}
+
+model MarketingProject {
+  id                  String              @id @default(cuid())
+  tenantId            String
+  name                String
+  website             String
+  websiteVerified     Boolean             @default(false)
+  description         String
+  targetAudience      String?
+  brandVoice          String?
+  goals               String?
+  contentPillars      String[]            @default([])
+  preferredPlatforms  MarketingPlatform[] @default([])
+  postingFrequency    Json?
+  ctaDefault          String?
+  timezone            String              @default("Africa/Nairobi")
+  active              Boolean             @default(true)
+  autonomyMode        AutonomyMode        @default(APPROVAL)
+  allowedContentTypes ContentType[]       @default([])
+  maxPostsPerDay      Int                 @default(1)
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+
+  tenant      Tenant              @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  strategies  MarketingStrategy[]
+  campaigns   MarketingCampaign[]
+  content     MarketingContent[]
+  connections SocialConnection[]
+  scheduled   ScheduledPost[]
+  published   PublishedPost[]
+  metrics     MarketingMetric[]
+  insights    MarketingInsight[]
+  media       MediaAsset[]
+
+  @@unique([tenantId, name])
+  @@map("marketing_projects")
+}
+
+model MarketingStrategy {
+  id               String   @id @default(cuid())
+  tenantId         String
+  projectId        String
+  version          Int
+  objectives       String[] @default([])
+  audiences        String[] @default([])
+  contentPillars   String[] @default([])
+  campaignThemes   String[] @default([])
+  platformStrategy Json?
+  postingFrequency Json?
+  ctaStrategy      String?
+  reason           String
+  generatedBy      String
+  changes          String?
+  createdAt        DateTime @default(now())
+
+  tenant  Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project MarketingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([projectId, version])
+  @@map("marketing_strategies")
+}
+
+model MarketingCampaign {
+  id        String    @id @default(cuid())
+  tenantId  String
+  projectId String
+  name      String
+  theme     String?
+  goal      String?
+  startDate DateTime?
+  endDate   DateTime?
+  paused    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project  MarketingProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  content  MarketingContent[]
+  metrics  MarketingMetric[]
+  insights MarketingInsight[]
+
+  @@map("marketing_campaigns")
+}
+
+model MarketingContent {
+  id              String        @id @default(cuid())
+  tenantId        String
+  projectId       String
+  campaignId      String?
+  contentType     ContentType
+  sourceType      String?
+  sourceRef       String?
+  title           String?
+  body            String
+  imagePrompt     String?
+  imageAltText    String?
+  status          ContentStatus @default(draft)
+  contentHash     String
+  rejectionReason String?
+  createdBy       String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  tenant    Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project   MarketingProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  campaign  MarketingCampaign? @relation(fields: [campaignId], references: [id])
+  scheduled ScheduledPost[]
+  media     MediaAsset[]
+
+  @@index([tenantId, projectId, contentHash])
+  @@index([tenantId, status])
+  @@map("marketing_content")
+}
+
+model SocialConnection {
+  id                String                 @id @default(cuid())
+  tenantId          String
+  projectId         String?
+  provider          String                 @default("buffer")
+  platform          MarketingPlatform
+  externalChannelId String
+  externalOrgId     String?
+  accountName       String
+  encryptedApiKey   String
+  status            SocialConnectionStatus @default(connected)
+  lastCheckedAt     DateTime?
+  lastErrorSafe     String?
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  tenant    Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project   MarketingProject? @relation(fields: [projectId], references: [id])
+  scheduled ScheduledPost[]
+  published PublishedPost[]
+
+  @@unique([provider, externalChannelId])
+  @@index([tenantId])
+  @@map("social_connections")
+}
+
+model ScheduledPost {
+  id                 String            @id @default(cuid())
+  tenantId           String
+  projectId          String
+  contentId          String
+  socialConnectionId String
+  platform           MarketingPlatform
+  adaptedText        String
+  mediaAssetIds      String[]          @default([])
+  scheduledFor       DateTime
+  idempotencyKey     String            @unique
+  status             ContentStatus     @default(scheduled)
+  attempts           Int               @default(0)
+  providerPostId     String?
+  providerAcceptedAt DateTime?
+  lastErrorSafe      String?
+  cancelledAt        DateTime?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+
+  tenant     Tenant           @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project    MarketingProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  content    MarketingContent @relation(fields: [contentId], references: [id])
+  connection SocialConnection @relation(fields: [socialConnectionId], references: [id])
+  published  PublishedPost?
+  jobs       AutomationJob[]
+
+  @@index([tenantId, status])
+  @@map("scheduled_posts")
+}
+
+model PublishedPost {
+  id                 String            @id @default(cuid())
+  tenantId           String
+  projectId          String
+  scheduledPostId    String            @unique
+  socialConnectionId String
+  platform           MarketingPlatform
+  externalPostId     String
+  externalUrl        String?
+  publishedAt        DateTime          @default(now())
+
+  tenant     Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project    MarketingProject  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  scheduled  ScheduledPost     @relation(fields: [scheduledPostId], references: [id])
+  connection SocialConnection  @relation(fields: [socialConnectionId], references: [id])
+  metrics    MarketingMetric[]
+
+  @@unique([socialConnectionId, externalPostId])
+  @@map("published_posts")
+}
+
+model MarketingMetric {
+  id              String             @id @default(cuid())
+  tenantId        String
+  projectId       String
+  campaignId      String?
+  publishedPostId String?
+  platform        MarketingPlatform?
+  metricName      String
+  value           Float?
+  unavailable     Boolean            @default(false)
+  periodStart     DateTime
+  periodEnd       DateTime
+  collectedAt     DateTime           @default(now())
+
+  tenant        Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project       MarketingProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  campaign      MarketingCampaign? @relation(fields: [campaignId], references: [id])
+  publishedPost PublishedPost?     @relation(fields: [publishedPostId], references: [id])
+
+  @@map("marketing_metrics")
+}
+
+model MarketingInsight {
+  id               String   @id @default(cuid())
+  tenantId         String
+  projectId        String
+  campaignId       String?
+  summary          String
+  recommendation   String?
+  basedOnMetricIds String[] @default([])
+  createdAt        DateTime @default(now())
+
+  tenant   Tenant             @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project  MarketingProject   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  campaign MarketingCampaign? @relation(fields: [campaignId], references: [id])
+
+  @@map("marketing_insights")
+}
+
+model MediaAsset {
+  id                 String   @id @default(cuid())
+  tenantId           String
+  projectId          String?
+  contentId          String?
+  provider           String
+  providerAssetId    String
+  cloudinaryPublicId String
+  secureUrl          String
+  width              Int?
+  height             Int?
+  mimeType           String
+  prompt             String
+  altText            String?
+  createdAt          DateTime @default(now())
+
+  tenant  Tenant            @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  project MarketingProject? @relation(fields: [projectId], references: [id])
+  content MarketingContent? @relation(fields: [contentId], references: [id])
+
+  @@index([tenantId, createdAt])
+  @@map("media_assets")
+}
+
+model AutomationJob {
+  id              String              @id @default(cuid())
+  tenantId        String
+  jobType         AutomationJobType
+  status          AutomationJobStatus @default(pending)
+  runAt           DateTime
+  attempts        Int                 @default(0)
+  maxAttempts     Int                 @default(5)
+  lockedAt        DateTime?
+  lockedBy        String?
+  lastErrorSafe   String?
+  scheduledPostId String?
+  idempotencyKey  String              @unique
+  createdAt       DateTime            @default(now())
+  finishedAt      DateTime?
+
+  tenant        Tenant         @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  scheduledPost ScheduledPost? @relation(fields: [scheduledPostId], references: [id])
+
+  @@index([status, runAt])
+  @@map("automation_jobs")
+}
+
+model AIActionLog {
+  id               String   @id @default(cuid())
+  tenantId         String
+  projectId        String?
+  action           String
+  status           String
+  reason           String?
+  provider         String?
+  externalId       String?
+  estimatedCostUsd Float?
+  promptHash       String?
+  createdAt        DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  @@index([tenantId, createdAt])
+  @@map("ai_action_logs")
 }
